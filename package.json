@@ -1,7 +1,7 @@
 {
   "name": "chronicle-devlog",
-  "version": "0.3.0",
-  "description": "Capture AI coding sessions once and render a private Chronicle project brain.",
+  "version": "0.4.0",
+  "description": "Capture AI coding sessions once and render Chronicle project, team, and public views.",
   "type": "module",
   "bin": {
     "chronicle": "./bin/chronicle.js"
@@ -11,6 +11,8 @@
     "render": "node ./bin/chronicle.js render personal --store data/chronicle.json --output dist/devlog.html",
     "render:brain": "node ./bin/chronicle.js render brain --store data/chronicle.json --output dist/project-brain.html --index _INDEX.md",
     "render:team": "node ./bin/chronicle.js render team --store data/chronicle.json --output dist/team-report.html",
+    "public:draft": "node ./bin/chronicle.js public draft --store data/chronicle.json --output dist/public-draft.html",
+    "public:ship": "node ./bin/chronicle.js public ship --store data/chronicle.json --output dist/public/index.html",
     "validate": "node ./bin/chronicle.js validate --store data/chronicle.json",
     "test": "node --test"
   },

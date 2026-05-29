@@ -5,6 +5,7 @@ import { renderPersonalDevlogToFile } from "./render/personalDevlog.js";
 import { renderProjectBrainToFile } from "./render/projectBrain.js";
 import { renderRootIndexToFile } from "./render/projectIndex.js";
 import { renderTeamReportToFile } from "./render/teamReport.js";
+import { draftPublicBuildPage, shipPublicBuildPage } from "./public/workflow.js";
 import { validateEventStore } from "./schema/validateEvents.js";
 import { loadEventStore } from "./store/eventsStore.js";
 import { loadChronicleConfig } from "./utils/config.js";
@@ -16,6 +17,8 @@ Usage:
   chronicle render brain [--store data/chronicle.json] [--output dist/project-brain.html] [--index _INDEX.md]
   chronicle render team [--store data/chronicle.json] [--output dist/team-report.html]
   chronicle render personal [--store data/chronicle.json] [--output dist/devlog.html]
+  chronicle public draft [--version v0.1.0] [--store data/chronicle.json] [--output dist/public-draft.html]
+  chronicle public ship --version v0.1.0 --approve [--store data/chronicle.json] [--output dist/public/index.html] [--github-pages] [--dry-run]
   chronicle validate [--store data/chronicle.json]
 
 Examples:
@@ -23,6 +26,8 @@ Examples:
   chronicle render brain --store data/chronicle.json --output dist/project-brain.html
   chronicle render team --store data/chronicle.json --output dist/team-report.html
   chronicle render personal --store data/chronicle.json --output dist/devlog.html
+  chronicle public draft --version v0.1.0 --store data/chronicle.json --output dist/public-draft.html
+  chronicle public ship --version v0.1.0 --approve --store data/chronicle.json --output dist/public/index.html
   chronicle validate --store data/chronicle.json
 `;
 
@@ -71,6 +76,45 @@ export async function main(argv) {
     const outputPath = options.output ?? config.teamOutput ?? "dist/team-report.html";
     const result = await renderTeamReportToFile({ storePath, outputPath });
     console.log(`Rendered ${result.visibleCount} team-visible item(s) to ${outputPath}`);
+    return;
+  }
+
+  if (command === "public" && subcommand === "draft") {
+    const options = parseOptions(rest);
+    const config = await loadChronicleConfig();
+    const storePath = options.store ?? config.store;
+    const outputPath = options.output ?? config.publicDraftOutput ?? "dist/public-draft.html";
+    const version = options.version ?? "draft";
+    const result = await draftPublicBuildPage({ storePath, outputPath, version });
+    console.log(`Drafted ${result.updates.length} public update(s) to ${outputPath}`);
+    if (result.skippedCount > 0) {
+      console.log(`Skipped ${result.skippedCount} public item(s) with missing summaries or safety flags.`);
+    }
+    return;
+  }
+
+  if (command === "public" && subcommand === "ship") {
+    const options = parseOptions(rest);
+    const config = await loadChronicleConfig();
+    const storePath = options.store ?? config.store;
+    const outputPath = options.output ?? config.publicOutput ?? "dist/public/index.html";
+    const result = await shipPublicBuildPage({
+      storePath,
+      outputPath,
+      version: options.version,
+      approve: Boolean(options.approve),
+      dryRun: Boolean(options["dry-run"]),
+      githubPages: Boolean(options["github-pages"]),
+      pagesBranch: options["pages-branch"] ?? "gh-pages",
+      pagesPath: options["pages-path"] ?? "index.html",
+    });
+    console.log(`Shipped ${result.updates.length} public update(s) to ${outputPath}${result.dryRun ? " (dry run)" : ""}`);
+    if (!result.dryRun) {
+      console.log(`Recorded ${result.release.appendedCount} public release marker(s).`);
+    }
+    if (result.publish) {
+      console.log(result.publish.published ? `Published to ${result.publish.branch}.` : `GitHub Pages dry run for ${result.publish.branch}.`);
+    }
     return;
   }
 

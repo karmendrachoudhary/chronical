@@ -12,6 +12,8 @@ const EMPTY_LINKS = {
   releases: [],
 };
 
+const GENERATED_BY = "chronicle-devlog@0.4.0";
+
 export async function loadEventStore(storePath) {
   return loadChronicleStore(storePath);
 }
@@ -54,7 +56,7 @@ export async function appendItems(storePath, items) {
 
   const nextStore = withCompatibilityViews({
     schema_version: 2,
-    generated_by: "chronicle-devlog@0.2.0",
+    generated_by: GENERATED_BY,
     items: [...store.items, ...newItems].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))),
   });
 
@@ -73,14 +75,14 @@ export function normalizeStore(parsed) {
   if (Array.isArray(parsed?.items)) {
     return withCompatibilityViews({
       schema_version: 2,
-      generated_by: parsed.generated_by ?? "chronicle-devlog@0.2.0",
+      generated_by: parsed.generated_by ?? GENERATED_BY,
       items: parsed.items.map(normalizeItem),
     });
   }
   if (Array.isArray(parsed?.events)) {
     return withCompatibilityViews({
       schema_version: 2,
-      generated_by: parsed.generated_by ?? "chronicle-devlog@0.2.0",
+      generated_by: parsed.generated_by ?? GENERATED_BY,
       items: parsed.events.map(legacyEventToItem),
     });
   }
@@ -135,7 +137,7 @@ export function legacyEventToItem(event) {
 function emptyStore() {
   return withCompatibilityViews({
     schema_version: 2,
-    generated_by: "chronicle-devlog@0.2.0",
+    generated_by: GENERATED_BY,
     items: [],
   });
 }

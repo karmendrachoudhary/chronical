@@ -3,6 +3,8 @@
   "personalOutput": "dist/devlog.html",
   "brainOutput": "dist/project-brain.html",
   "teamOutput": "dist/team-report.html",
+  "publicDraftOutput": "dist/public-draft.html",
+  "publicOutput": "dist/public/index.html",
   "rootIndexOutput": "_INDEX.md",
   "defaultVisibility": "private",
   "capture": {

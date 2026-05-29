@@ -1,7 +1,7 @@
 {
   "name": "chronicle",
-  "version": "0.3.0",
-  "description": "Capture AI coding sessions and render a private self-updating project brain.",
+  "version": "0.4.0",
+  "description": "Capture AI coding sessions and render private, team, and public Chronicle views.",
   "author": {
     "name": "Chronicle contributors"
   },
@@ -9,8 +9,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Chronicle",
-    "shortDescription": "Turn AI coding sessions into a private project brain.",
-    "longDescription": "Chronicle captures session summaries through lifecycle hooks and renders a self-contained personal devlog, project-brain HTML page, team report, and root project index from a local item store.",
+    "shortDescription": "Turn AI coding sessions into Chronicle views.",
+    "longDescription": "Chronicle captures session summaries through lifecycle hooks and renders a self-contained personal devlog, project-brain HTML page, team report, public build log, and root project index from a local item store.",
     "developerName": "Chronicle contributors",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],
@@ -18,6 +18,7 @@
     "defaultPrompt": [
       "Use Chronicle to render my project brain.",
       "Use Chronicle to render my team report.",
+      "Use Chronicle to draft my public build log.",
       "Use Chronicle to capture this session into the devlog."
     ]
   }

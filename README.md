@@ -2,7 +2,7 @@
 
 Chronicle turns AI coding sessions into a private, self-updating devlog and project brain.
 
-Phase 1 through Phase 4 are working: Chronicle can capture a session, store it in one unified data file, validate safety rules, render the private personal devlog, render the richer project-brain HTML page, render a team-safe report, and regenerate a root `_INDEX.md` map for agents and humans.
+Phase 1 through Phase 5 are working: Chronicle can capture a session, store it in one unified data file, validate safety rules, render the private personal devlog, render the richer project-brain HTML page, render a team-safe report, draft and ship an approval-gated public build log, and regenerate a root `_INDEX.md` map for agents and humans.
 
 ## What Works Now
 
@@ -12,12 +12,15 @@ Phase 1 through Phase 4 are working: Chronicle can capture a session, store it i
 - Render a self-contained personal devlog HTML file.
 - Render the full project-brain HTML page with Overview, Features, Files, Timeline, Decisions, Roadmap, cross-links, and Command-K search.
 - Render a team report that only shows `visibility: team` and `visibility: public` items.
+- Draft a public build-in-public page from `visibility: public` items only.
+- Ship the public page only after an explicit `--approve` flag, then record a release marker.
+- Optionally publish the public HTML to the `gh-pages` branch for GitHub Pages.
 - Regenerate the root `_INDEX.md` project map from the same Chronicle data.
 - Keep every item `private` by default.
 - Flag likely secrets and keep those items private.
 - Validate the unified schema and public-safety rules.
 
-Public publishing, action intents, per-folder indexes, Superpowers ingestion, approval gates, and GitHub Pages deploys are planned for later phases.
+Action intents, per-folder indexes, Superpowers ingestion, and final open-source polish are planned for later phases.
 
 ## Try It Locally
 
@@ -30,6 +33,8 @@ npm run validate
 open dist/devlog.html
 open dist/project-brain.html
 open dist/team-report.html
+npm run public:draft -- --version v0.1.0
+open dist/public-draft.html
 ```
 
 The sample command reads `tests/fixtures/claude-session.jsonl`, appends one private event item to `data/chronicle.json`, renders the personal devlog, renders the project brain, renders the team report, and refreshes `_INDEX.md`.
@@ -41,6 +46,8 @@ node ./bin/chronicle.js capture --hook-input - --source-tool claude-code --rende
 node ./bin/chronicle.js render personal --store data/chronicle.json --output dist/devlog.html
 node ./bin/chronicle.js render brain --store data/chronicle.json --output dist/project-brain.html --index _INDEX.md
 node ./bin/chronicle.js render team --store data/chronicle.json --output dist/team-report.html
+node ./bin/chronicle.js public draft --version v0.1.0 --store data/chronicle.json --output dist/public-draft.html
+node ./bin/chronicle.js public ship --version v0.1.0 --approve --store data/chronicle.json --output dist/public/index.html
 node ./bin/chronicle.js validate --store data/chronicle.json
 ```
 
@@ -51,7 +58,34 @@ Plain language version:
 - `render personal` rebuilds the private HTML page from the Chronicle data file.
 - `render brain` rebuilds the richer project brain and root `_INDEX.md` from that same data file.
 - `render team` rebuilds a team-safe HTML report from explicitly shared items.
+- `public draft` builds a public-safe HTML draft from explicitly public items.
+- `public ship` requires `--approve`, writes the final public HTML, and records a release marker.
 - `validate` checks the Chronicle data file against the schema and safety rules.
+
+## Public Build Log Safety
+
+The public page is allowlist-only. Plain English: Chronicle publishes nothing unless you mark an item `visibility: public`, and even then the public renderer only uses `public_summary`, safe dates, safe type labels, and safe tech tags. It never renders `raw_summary`, private `summary`, file paths, transcript paths, or source references.
+
+Draft first:
+
+```bash
+npm run public:draft -- --version v0.1.0
+open dist/public-draft.html
+```
+
+After you review the draft, ship it locally:
+
+```bash
+npm run public:ship -- --version v0.1.0 --approve
+```
+
+To test the GitHub Pages path without pushing:
+
+```bash
+npm run public:ship -- --version v0.1.0 --approve --github-pages --dry-run
+```
+
+To publish to GitHub Pages, run the same command without `--dry-run`. Chronicle writes the generated file as `index.html` on the `gh-pages` branch and pushes that branch.
 
 ## Team Report Safety
 

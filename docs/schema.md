@@ -9,7 +9,7 @@ The top-level shape is:
 ```json
 {
   "schema_version": 2,
-  "generated_by": "chronicle-devlog@0.2.0",
+  "generated_by": "chronicle-devlog@0.4.0",
   "items": []
 }
 ```
@@ -59,6 +59,29 @@ The default visibility is always `private`. Public renderers must only read item
 Team renderers must only read items with `visibility: team` or `visibility: public`. For team items, they may read `summary`. For public items, they must still read `public_summary` only.
 
 Chronicle validates public items strictly. A public item is invalid if `title`, `summary`, or `public_summary` contains secret-looking values, local paths, internal URLs, or sensitive env var names.
+
+For public rendering, Chronicle also filters tech tags through the same safety scanner before displaying them.
+
+## Release Items
+
+`chronicle public ship --approve` records a release item after writing the public HTML. Release items use the same shared fields and set:
+
+```json
+{
+  "kind": "release",
+  "visibility": "public",
+  "public_summary": "Published v0.1.0 build update.",
+  "data": {
+    "version": "v0.1.0",
+    "public_release": true,
+    "output_path": "dist/public/index.html",
+    "shipped_at": "2026-05-29T00:00:00.000Z",
+    "item_ids": ["evt_1234abcd"]
+  }
+}
+```
+
+Plain English: the release item is Chronicle's bookmark. It tells the next public draft which public items were already shipped.
 
 Use this command after hand-editing the store:
 

@@ -7,6 +7,7 @@ import { captureSession } from "../src/capture/captureSession.js";
 import { main } from "../src/cli.js";
 import { renderProjectBrain, renderProjectBrainToFile } from "../src/render/projectBrain.js";
 import { renderRootIndexToFile } from "../src/render/projectIndex.js";
+import { renderPublicBuildPage } from "../src/render/publicBuildPage.js";
 import { renderTeamReport, renderTeamReportToFile } from "../src/render/teamReport.js";
 import { detectSecrets } from "../src/safety/redaction.js";
 import { validateEvent } from "../src/schema/validateEvents.js";
@@ -95,6 +96,84 @@ test("team report renders to file through renderer and CLI", async () => {
     assert.equal(result.visibleCount, 4);
     assert.match(await readFile(rendererPath, "utf8"), /Chronicle Team Report/);
     assert.match(await readFile(cliPath, "utf8"), /Team-safe shipped summary/);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("public build page only renders safe public summaries", () => {
+  const html = renderPublicBuildPage(publicBuildItems(), { version: "v0.1.0" });
+
+  assert.match(html, /Chronicle Build Log/);
+  assert.match(html, /Added the public timeline/);
+  assert.match(html, /Node.js/);
+  assert.doesNotMatch(html, /PRIVATE_RAW_DO_NOT_RENDER/);
+  assert.doesNotMatch(html, /TEAM_RAW_DO_NOT_RENDER/);
+  assert.doesNotMatch(html, /PUBLIC_RAW_DO_NOT_RENDER/);
+  assert.doesNotMatch(html, /SUMMARY_DO_NOT_RENDER/);
+  assert.doesNotMatch(html, /UNSAFE_PUBLIC_DO_NOT_RENDER/);
+  assert.doesNotMatch(html, /\/Users\/me\/secret/);
+  assert.doesNotMatch(html, /localhost:3000/);
+  assert.doesNotMatch(html, /https?:\/\//);
+  assert.doesNotMatch(html, /<script src=/i);
+  assert.doesNotMatch(html, /<link/i);
+});
+
+test("public draft and ship commands enforce approval", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "chronicle-public-"));
+  try {
+    const storePath = path.join(tempDir, "chronicle.json");
+    const draftPath = path.join(tempDir, "public-draft.html");
+    const shipPath = path.join(tempDir, "public", "index.html");
+    await writeFile(storePath, `${JSON.stringify({ schema_version: 2, generated_by: "test", items: publicStoreItems() }, null, 2)}\n`, "utf8");
+
+    await main(["public", "draft", "--version", "v0.1.0", "--store", storePath, "--output", draftPath]);
+    assert.match(await readFile(draftPath, "utf8"), /Added the public timeline/);
+    assert.equal(JSON.parse(await readFile(storePath, "utf8")).items.some((item) => item.kind === "release"), false);
+
+    await assert.rejects(
+      () => main(["public", "ship", "--version", "v0.1.0", "--store", storePath, "--output", shipPath]),
+      /--approve/,
+    );
+
+    await main(["public", "ship", "--version", "v0.1.0", "--approve", "--dry-run", "--store", storePath, "--output", shipPath]);
+    assert.match(await readFile(shipPath, "utf8"), /Added the public timeline/);
+    assert.equal(JSON.parse(await readFile(storePath, "utf8")).items.some((item) => item.kind === "release"), false);
+
+    await main(["public", "ship", "--version", "v0.1.0", "--approve", "--store", storePath, "--output", shipPath]);
+    const shippedStore = JSON.parse(await readFile(storePath, "utf8"));
+    const release = shippedStore.items.find((item) => item.kind === "release");
+    assert.equal(release.visibility, "public");
+    assert.equal(release.data.version, "v0.1.0");
+    assert.deepEqual(release.data.item_ids, ["evt_public_good"]);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("public GitHub Pages dry run does not record a release", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "chronicle-pages-dry-"));
+  try {
+    const storePath = path.join(tempDir, "chronicle.json");
+    const outputPath = path.join(tempDir, "public", "index.html");
+    await writeFile(storePath, `${JSON.stringify({ schema_version: 2, generated_by: "test", items: publicStoreItems() }, null, 2)}\n`, "utf8");
+
+    await main([
+      "public",
+      "ship",
+      "--version",
+      "v0.1.0",
+      "--approve",
+      "--dry-run",
+      "--github-pages",
+      "--store",
+      storePath,
+      "--output",
+      outputPath,
+    ]);
+
+    assert.match(await readFile(outputPath, "utf8"), /Added the public timeline/);
+    assert.equal(JSON.parse(await readFile(storePath, "utf8")).items.some((item) => item.kind === "release"), false);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
@@ -304,6 +383,89 @@ function teamReportItems() {
       raw_summary: "DECISION_RAW_DO_NOT_RENDER",
       visibility: "team",
       status: "completed",
+    }),
+  ];
+}
+
+function publicBuildItems() {
+  return [
+    baseItem({
+      id: "evt_private_hidden",
+      kind: "event",
+      type: "feature_added",
+      title: "Private hidden item",
+      summary: "Private summary should not render.",
+      raw_summary: "PRIVATE_RAW_DO_NOT_RENDER /Users/me/secret/private.js",
+      visibility: "private",
+      session_id: "private-session",
+      source_tool: "codex",
+    }),
+    baseItem({
+      id: "evt_team_hidden",
+      kind: "event",
+      type: "feature_added",
+      title: "Team hidden item",
+      summary: "Team summary should not render.",
+      raw_summary: "TEAM_RAW_DO_NOT_RENDER",
+      visibility: "team",
+      session_id: "team-session",
+      source_tool: "codex",
+    }),
+    baseItem({
+      id: "evt_public_good",
+      kind: "event",
+      type: "feature_added",
+      title: "Public timeline",
+      summary: "SUMMARY_DO_NOT_RENDER",
+      raw_summary: "PUBLIC_RAW_DO_NOT_RENDER",
+      public_summary: "Added the public timeline.",
+      visibility: "public",
+      session_id: "public-session",
+      source_tool: "claude-code",
+      tech: ["Node.js", "/Users/me/secret-tech"],
+    }),
+    baseItem({
+      id: "evt_public_unsafe",
+      kind: "event",
+      type: "note",
+      title: "Unsafe public item",
+      summary: "Unsafe summary should not render.",
+      raw_summary: "Unsafe raw should not render.",
+      public_summary: "UNSAFE_PUBLIC_DO_NOT_RENDER http://localhost:3000",
+      visibility: "public",
+      safety_flags: ["public_summary:internal_url"],
+      session_id: "unsafe-session",
+      source_tool: "gemini",
+    }),
+  ];
+}
+
+function publicStoreItems() {
+  return [
+    baseItem({
+      id: "evt_public_good",
+      kind: "event",
+      type: "feature_added",
+      title: "Public timeline",
+      summary: "Added the public timeline.",
+      raw_summary: "Added the public timeline.",
+      public_summary: "Added the public timeline.",
+      visibility: "public",
+      status: "completed",
+      session_id: "public-session",
+      source_tool: "claude-code",
+      tech: ["Node.js"],
+    }),
+    baseItem({
+      id: "evt_private_hidden",
+      kind: "event",
+      type: "note",
+      title: "Private note",
+      summary: "Private note",
+      raw_summary: "Private note",
+      visibility: "private",
+      session_id: "private-session",
+      source_tool: "codex",
     }),
   ];
 }

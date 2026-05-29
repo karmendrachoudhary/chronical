@@ -116,6 +116,8 @@ export function validateItem(item) {
       ...scanTextForSafety(item.public_summary, { field: "public_summary", includePrivacyPatterns: true }),
       ...scanTextForSafety(item.title, { field: "title", includePrivacyPatterns: true }),
       ...scanTextForSafety(item.summary, { field: "summary", includePrivacyPatterns: true }),
+      ...scanTextForSafety(item.tech.join("\n"), { field: "tech", includePrivacyPatterns: true }),
+      ...scanTextForSafety(item.tags.join("\n"), { field: "tags", includePrivacyPatterns: true }),
     ].map((flag) => flag.label);
     if (item.safety_flags.length > 0 || computedFlags.length > 0) {
       errors.push("public items cannot contain safety flags or publishable secret/privacy patterns");
