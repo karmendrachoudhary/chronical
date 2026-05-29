@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chronicle.dev/schemas/event.schema.json",
+  "title": "Chronicle Event Store",
+  "type": "object",
+  "required": ["schema_version", "events"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "generated_by": { "type": "string" },
+    "events": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/event" }
+    }
+  },
+  "$defs": {
+    "event": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "date",
+        "session_id",
+        "source_tool",
+        "title",
+        "raw_summary",
+        "public_summary",
+        "tech",
+        "files_touched",
+        "visibility",
+        "status",
+        "created_at"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^evt_[a-f0-9]{8,}$" },
+        "type": {
+          "type": "string",
+          "enum": ["feature_added", "bugfix", "refactor", "dependency_changed", "version_bump", "decision", "note"]
+        },
+        "date": { "type": "string", "format": "date" },
+        "session_id": { "type": "string" },
+        "source_tool": { "type": "string", "enum": ["claude-code", "codex", "gemini"] },
+        "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "raw_summary": { "type": "string" },
+        "public_summary": { "type": "string" },
+        "tech": { "type": "array", "items": { "type": "string" } },
+        "files_touched": { "type": "integer", "minimum": 0 },
+        "visibility": { "type": "string", "enum": ["private", "team", "public"] },
+        "confidence": { "type": "string", "enum": ["low", "medium", "high"] },
+        "status": { "type": "string", "enum": ["completed", "blocked", "in_progress", "unknown"] },
+        "source_ref": {
+          "type": "object",
+          "properties": {
+            "transcript_path": { "type": ["string", "null"] },
+            "cwd": { "type": "string" },
+            "turn_id": { "type": ["string", "null"] },
+            "hook_event_name": { "type": ["string", "null"] }
+          }
+        },
+        "files": { "type": "array", "items": { "type": "string" } },
+        "safety_flags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(raw_summary|public_summary|title):[a-z0-9_]+$"
+          }
+        },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "visibility": { "const": "public" } },
+            "required": ["visibility"]
+          },
+          "then": {
+            "properties": {
+              "public_summary": { "minLength": 1 },
+              "safety_flags": { "maxItems": 0 }
+            }
+          }
+        }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

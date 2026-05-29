@@ -1,0 +1,23 @@
+{
+  "name": "chronicle",
+  "version": "0.2.0",
+  "description": "Capture AI coding sessions and render a private self-updating project brain.",
+  "author": {
+    "name": "Chronicle contributors"
+  },
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Chronicle",
+    "shortDescription": "Turn AI coding sessions into a private project brain.",
+    "longDescription": "Chronicle captures session summaries through lifecycle hooks and renders a self-contained personal devlog, project-brain HTML page, and root project index from a local item store.",
+    "developerName": "Chronicle contributors",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "brandColor": "#116A6C",
+    "defaultPrompt": [
+      "Use Chronicle to render my project brain.",
+      "Use Chronicle to capture this session into the devlog."
+    ]
+  }
+}

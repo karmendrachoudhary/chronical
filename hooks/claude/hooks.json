@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/bin/chronicle.js\" capture --hook-input - --source-tool claude-code --render --hook-mode",
+            "timeout": 60,
+            "statusMessage": "Writing Chronicle project brain"
+          }
+        ]
+      }
+    ]
+  }
+}

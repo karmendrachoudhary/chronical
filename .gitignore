@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Generated local outputs. Chronicle can rebuild these from source + local data.
+dist/
+data/chronicle.json
+chronicle-actions.json
+
+# Logs and test output
+*.log
+coverage/
+.nyc_output/
+
+# Local environment and OS files
+.env
+.env.*
+!.env.example
+.DS_Store

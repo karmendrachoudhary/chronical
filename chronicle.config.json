@@ -1,0 +1,12 @@
+{
+  "store": "data/chronicle.json",
+  "personalOutput": "dist/devlog.html",
+  "brainOutput": "dist/project-brain.html",
+  "rootIndexOutput": "_INDEX.md",
+  "defaultVisibility": "private",
+  "capture": {
+    "summarizer": "offline-basic",
+    "summarizerCommand": null,
+    "maxTranscriptBytes": 4000000
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "session_id": "sample-session-001",
+  "transcript_path": "tests/fixtures/claude-session.jsonl",
+  "cwd": "/tmp/chronicle-sample",
+  "hook_event_name": "Stop",
+  "turn_id": "turn-001",
+  "last_assistant_message": "Implemented the personal devlog renderer and added tests."
+}
