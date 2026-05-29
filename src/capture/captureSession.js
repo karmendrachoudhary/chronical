@@ -5,7 +5,7 @@ import { parseCodexTranscript } from "../parsers/codex.js";
 import { parseGeminiTranscript } from "../parsers/gemini.js";
 import { renderPersonalDevlogToFile } from "../render/personalDevlog.js";
 import { renderProjectBrainToFile } from "../render/projectBrain.js";
-import { renderRootIndexToFile } from "../render/projectIndex.js";
+import { renderProjectIndexesToFiles } from "../render/projectIndex.js";
 import { renderTeamReportToFile } from "../render/teamReport.js";
 import { collectEventSafetyFlags, redactSecrets } from "../safety/redaction.js";
 import { appendEvents } from "../store/eventsStore.js";
@@ -22,6 +22,7 @@ export async function captureSession({
   brainOutputPath = null,
   teamOutputPath = null,
   rootIndexOutputPath = null,
+  folderIndexOptions = null,
   renderAfterCapture = false,
   summaryOverride,
   summarizerCommand = null,
@@ -104,8 +105,12 @@ export async function captureSession({
       renderedPaths.push(teamResult.outputPath);
     }
     if (rootIndexOutputPath) {
-      const indexResult = await renderRootIndexToFile({ storePath, outputPath: rootIndexOutputPath });
-      renderedPaths.push(indexResult.outputPath);
+      const indexResult = await renderProjectIndexesToFiles({
+        ...(folderIndexOptions ?? { rootDir: path.dirname(path.resolve(rootIndexOutputPath)) }),
+        storePath,
+        rootIndexOutput: rootIndexOutputPath,
+      });
+      renderedPaths.push(indexResult.root, ...indexResult.folders);
     }
   }
 

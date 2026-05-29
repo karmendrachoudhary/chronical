@@ -1,6 +1,6 @@
 {
   "name": "chronicle",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Capture AI coding sessions and render private, team, and public Chronicle views.",
   "author": {
     "name": "Chronicle contributors"
@@ -10,7 +10,7 @@
   "interface": {
     "displayName": "Chronicle",
     "shortDescription": "Turn AI coding sessions into Chronicle views.",
-    "longDescription": "Chronicle captures session summaries through lifecycle hooks and renders a self-contained personal devlog, project-brain HTML page, team report, public build log, and root project index from a local item store.",
+    "longDescription": "Chronicle captures session summaries through lifecycle hooks and renders a self-contained personal devlog, project-brain HTML page, team report, public build log, Superpowers imports, action intents, and generated project indexes from a local item store.",
     "developerName": "Chronicle contributors",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],
@@ -19,6 +19,7 @@
       "Use Chronicle to render my project brain.",
       "Use Chronicle to render my team report.",
       "Use Chronicle to draft my public build log.",
+      "Use Chronicle to import Superpowers artifacts.",
       "Use Chronicle to capture this session into the devlog."
     ]
   }

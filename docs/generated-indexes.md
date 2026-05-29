@@ -1,6 +1,6 @@
 # Generated Index Files
 
-Chronicle generates `_INDEX.md` at the project root in Phase 3.
+Chronicle generates `_INDEX.md` at the project root and, as of Phase 6, selective per-folder `_INDEX.md` files.
 
 Plain English: this file is a small map of the project. It helps a future coding agent or human understand what changed recently and which files matter without scanning the whole repo.
 
@@ -23,9 +23,24 @@ Why:
 
 ## Current Scope
 
-Phase 3 only writes the root `_INDEX.md`.
+Phase 6 writes:
 
-Per-folder index files are planned for Phase 6. They should be root-first and usefulness-based: generate one only for folders complex enough to need a map. Blanket index files in every folder would add clutter and waste agent context.
+- one root `_INDEX.md`, always;
+- per-folder `_INDEX.md` files only when the folder has enough tracked files or related Chronicle items to be useful.
+
+The default threshold is `minFiles: 3` or `minItems: 2`. This keeps the repo clean. A folder with one obvious file does not need a generated map.
+
+Run:
+
+```bash
+npm run render:indexes
+```
+
+Chronicle also refreshes indexes when `render brain`, `capture --render`, `import superpowers --render`, or `actions apply --render` runs.
+
+## Stale Cleanup
+
+Generated index files start with a Chronicle marker. Chronicle only removes stale folder indexes that contain that marker. It will not delete a hand-written `_INDEX.md` that does not start with the marker.
 
 ## Privacy
 

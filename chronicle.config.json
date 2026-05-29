@@ -6,7 +6,19 @@
   "publicDraftOutput": "dist/public-draft.html",
   "publicOutput": "dist/public/index.html",
   "rootIndexOutput": "_INDEX.md",
+  "actionIntentsPath": "chronicle-actions.json",
   "defaultVisibility": "private",
+  "superpowers": {
+    "specsDir": "docs/superpowers/specs",
+    "plansDir": "docs/superpowers/plans"
+  },
+  "folderIndexes": {
+    "fileName": "_INDEX.md",
+    "minFiles": 3,
+    "minItems": 2,
+    "cleanStale": true,
+    "exclude": [".git", "node_modules", "dist", "data", ".worktrees"]
+  },
   "capture": {
     "summarizer": "offline-basic",
     "summarizerCommand": null,

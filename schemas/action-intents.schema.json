@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://chronicle.dev/schemas/action-intents.schema.json",
+  "title": "Chronicle Action Intents",
+  "type": "object",
+  "required": ["schema_version", "intents"],
+  "properties": {
+    "schema_version": { "type": "integer", "const": 1 },
+    "generated_by": { "type": "string" },
+    "intents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["action", "target", "value", "created_at"],
+        "properties": {
+          "action": { "type": "string", "enum": ["set_feature_status", "set_roadmap_status"] },
+          "target": { "type": "string", "pattern": "^(feat|plan)_[a-z0-9_-]{4,}$" },
+          "value": { "type": "string", "enum": ["completed", "blocked", "in_progress", "planned", "idea", "unknown"] },
+          "created_at": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

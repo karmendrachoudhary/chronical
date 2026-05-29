@@ -1,9 +1,11 @@
 import { readFile } from "node:fs/promises";
 import process from "node:process";
+import { applyActionIntents } from "./actions/applyActions.js";
 import { captureSession } from "./capture/captureSession.js";
+import { importSuperpowersArtifacts } from "./integrations/superpowers.js";
 import { renderPersonalDevlogToFile } from "./render/personalDevlog.js";
 import { renderProjectBrainToFile } from "./render/projectBrain.js";
-import { renderRootIndexToFile } from "./render/projectIndex.js";
+import { renderProjectIndexesToFiles } from "./render/projectIndex.js";
 import { renderTeamReportToFile } from "./render/teamReport.js";
 import { draftPublicBuildPage, shipPublicBuildPage } from "./public/workflow.js";
 import { validateEventStore } from "./schema/validateEvents.js";
@@ -15,8 +17,11 @@ const HELP = `Chronicle
 Usage:
   chronicle capture [--hook-input -|file] [--source-tool claude-code|codex|gemini] [--transcript file] [--render]
   chronicle render brain [--store data/chronicle.json] [--output dist/project-brain.html] [--index _INDEX.md]
+  chronicle render indexes [--store data/chronicle.json] [--root .]
   chronicle render team [--store data/chronicle.json] [--output dist/team-report.html]
   chronicle render personal [--store data/chronicle.json] [--output dist/devlog.html]
+  chronicle import superpowers [--store data/chronicle.json] [--root .] [--render]
+  chronicle actions apply [--actions chronicle-actions.json] [--store data/chronicle.json] [--render]
   chronicle public draft [--version v0.1.0] [--store data/chronicle.json] [--output dist/public-draft.html]
   chronicle public ship --version v0.1.0 --approve [--store data/chronicle.json] [--output dist/public/index.html] [--github-pages] [--dry-run]
   chronicle validate [--store data/chronicle.json]
@@ -24,8 +29,11 @@ Usage:
 Examples:
   chronicle capture --hook-input - --source-tool claude-code --render --hook-mode
   chronicle render brain --store data/chronicle.json --output dist/project-brain.html
+  chronicle render indexes --store data/chronicle.json --root .
   chronicle render team --store data/chronicle.json --output dist/team-report.html
   chronicle render personal --store data/chronicle.json --output dist/devlog.html
+  chronicle import superpowers --store data/chronicle.json --render
+  chronicle actions apply --actions chronicle-actions.json --store data/chronicle.json --render
   chronicle public draft --version v0.1.0 --store data/chronicle.json --output dist/public-draft.html
   chronicle public ship --version v0.1.0 --approve --store data/chronicle.json --output dist/public/index.html
   chronicle validate --store data/chronicle.json
@@ -63,9 +71,27 @@ export async function main(argv) {
     const outputPath = options.output ?? config.brainOutput ?? "dist/project-brain.html";
     const result = await renderProjectBrainToFile({ storePath, outputPath });
     const indexPath = options.index ?? config.rootIndexOutput ?? "_INDEX.md";
-    await renderRootIndexToFile({ storePath, outputPath: indexPath });
+    const indexResult = await renderProjectIndexesToFiles(projectIndexOptions({ config, storePath, rootIndexOutput: indexPath }));
     console.log(`Rendered ${result.itemCount} item(s) to ${outputPath}`);
-    console.log(`Rendered root index to ${indexPath}`);
+    console.log(`Rendered root index to ${indexResult.root}`);
+    console.log(`Rendered ${indexResult.folders.length} folder index(es).`);
+    return;
+  }
+
+  if (command === "render" && subcommand === "indexes") {
+    const options = parseOptions(rest);
+    const config = await loadChronicleConfig();
+    const storePath = options.store ?? config.store;
+    const result = await renderProjectIndexesToFiles(projectIndexOptions({
+      config,
+      storePath,
+      rootDir: options.root,
+      rootIndexOutput: options.index ?? config.rootIndexOutput ?? "_INDEX.md",
+      minFiles: options["min-files"],
+      minItems: options["min-items"],
+    }));
+    console.log(`Rendered root index to ${result.root}`);
+    console.log(`Rendered ${result.folders.length} folder index(es).`);
     return;
   }
 
@@ -118,6 +144,40 @@ export async function main(argv) {
     return;
   }
 
+  if (command === "import" && subcommand === "superpowers") {
+    const options = parseOptions(rest);
+    const config = await loadChronicleConfig();
+    const storePath = options.store ?? config.store;
+    const result = await importSuperpowersArtifacts({
+      storePath,
+      rootDir: options.root ?? process.cwd(),
+      specsDir: options.specs ?? config.superpowers?.specsDir ?? "docs/superpowers/specs",
+      plansDir: options.plans ?? config.superpowers?.plansDir ?? "docs/superpowers/plans",
+    });
+    console.log(`Imported ${result.itemCount} Superpowers item(s) from ${result.specCount} spec(s) and ${result.planCount} plan(s).`);
+    console.log(`Inserted ${result.insertedCount}, updated ${result.updatedCount}.`);
+    if (options.render) {
+      await renderAfterDataChange({ config, storePath });
+    }
+    return;
+  }
+
+  if (command === "actions" && subcommand === "apply") {
+    const options = parseOptions(rest);
+    const config = await loadChronicleConfig();
+    const storePath = options.store ?? config.store;
+    const actionsPath = options.actions ?? config.actionIntentsPath ?? "chronicle-actions.json";
+    const result = await applyActionIntents({ storePath, actionsPath });
+    console.log(`Applied ${result.appliedCount} action intent(s) from ${actionsPath}.`);
+    if (result.skippedCount > 0) {
+      console.log(`Skipped ${result.skippedCount} action intent(s).`);
+    }
+    if (options.render) {
+      await renderAfterDataChange({ config, storePath });
+    }
+    return;
+  }
+
   if (command === "validate") {
     const options = parseOptions([subcommand, ...rest].filter(Boolean));
     const config = await loadChronicleConfig();
@@ -132,6 +192,27 @@ export async function main(argv) {
   }
 
   throw new Error(`Unknown command.\n\n${HELP}`);
+}
+
+async function renderAfterDataChange({ config, storePath }) {
+  const brainOutputPath = config.brainOutput ?? "dist/project-brain.html";
+  await renderProjectBrainToFile({ storePath, outputPath: brainOutputPath });
+  await renderProjectIndexesToFiles(projectIndexOptions({ config, storePath, rootIndexOutput: config.rootIndexOutput ?? "_INDEX.md" }));
+  console.log(`Rendered project brain to ${brainOutputPath}.`);
+}
+
+function projectIndexOptions({ config, storePath, rootDir, rootIndexOutput, minFiles, minItems }) {
+  const folderIndexes = config.folderIndexes ?? {};
+  return {
+    storePath,
+    rootDir: rootDir ?? process.cwd(),
+    rootIndexOutput,
+    fileName: folderIndexes.fileName ?? "_INDEX.md",
+    minFiles: Number(minFiles ?? folderIndexes.minFiles ?? 3),
+    minItems: Number(minItems ?? folderIndexes.minItems ?? 2),
+    cleanStale: folderIndexes.cleanStale !== false,
+    exclude: folderIndexes.exclude ?? [],
+  };
 }
 
 async function runCapture(argv) {
@@ -151,6 +232,7 @@ async function runCapture(argv) {
       brainOutputPath: options["brain-output"] ?? config.brainOutput,
       teamOutputPath: options["team-output"] ?? config.teamOutput,
       rootIndexOutputPath: options.index ?? config.rootIndexOutput,
+      folderIndexOptions: projectIndexOptions({ config, storePath: options.store ?? config.store, rootIndexOutput: options.index ?? config.rootIndexOutput }),
       renderAfterCapture: Boolean(options.render),
       summaryOverride: options.summary,
       summarizerCommand: config.capture?.summarizerCommand ?? null,

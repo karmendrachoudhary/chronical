@@ -12,7 +12,7 @@ const EMPTY_LINKS = {
   releases: [],
 };
 
-const GENERATED_BY = "chronicle-devlog@0.4.0";
+const GENERATED_BY = "chronicle-devlog@0.5.0";
 
 export async function loadEventStore(storePath) {
   return loadChronicleStore(storePath);
@@ -54,18 +54,31 @@ export async function appendItems(storePath, items) {
     newItems.push(item);
   }
 
-  const nextStore = withCompatibilityViews({
-    schema_version: 2,
-    generated_by: GENERATED_BY,
-    items: [...store.items, ...newItems].sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))),
-  });
-
-  assertValidChronicleStore(nextStore);
-
-  await mkdir(path.dirname(storePath), { recursive: true });
-  await writeFile(storePath, `${JSON.stringify(toPersistedStore(nextStore), null, 2)}\n`, "utf8");
+  await writeItems(storePath, [...store.items, ...newItems]);
 
   return { appendedCount: newItems.length, skippedCount };
+}
+
+export async function upsertItems(storePath, items) {
+  const store = await loadChronicleStore(storePath);
+  const normalizedItems = items.map(normalizeItem);
+  assertValidItems(normalizedItems);
+
+  const byId = new Map(store.items.map((item) => [item.id, item]));
+  let insertedCount = 0;
+  let updatedCount = 0;
+
+  for (const item of normalizedItems) {
+    if (byId.has(item.id)) {
+      updatedCount += 1;
+    } else {
+      insertedCount += 1;
+    }
+    byId.set(item.id, item);
+  }
+
+  await writeItems(storePath, Array.from(byId.values()));
+  return { insertedCount, updatedCount };
 }
 
 export function normalizeStore(parsed) {
@@ -155,6 +168,20 @@ function toPersistedStore(store) {
     generated_by: store.generated_by,
     items: store.items,
   };
+}
+
+async function writeItems(storePath, items) {
+  const nextStore = withCompatibilityViews({
+    schema_version: 2,
+    generated_by: GENERATED_BY,
+    items: items.sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))),
+  });
+
+  assertValidChronicleStore(nextStore);
+
+  await mkdir(path.dirname(storePath), { recursive: true });
+  await writeFile(storePath, `${JSON.stringify(toPersistedStore(nextStore), null, 2)}\n`, "utf8");
+  return nextStore;
 }
 
 function normalizeLinks(links, files = []) {

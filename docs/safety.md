@@ -12,6 +12,7 @@ The current build can draft and ship a public build log, but publishing is appro
 - The public page only reads `visibility: public` items and only renders `public_summary`, safe dates, safe type labels, and safe tech tags.
 - `chronicle public ship` refuses to run unless you pass `--approve`.
 - `--dry-run` writes the public HTML for review but does not record a release marker or push GitHub Pages.
+- The project-brain page can queue action intents, but it cannot edit files or run commands. The CLI applies exported intents later.
 
 ## What Chronicle Scans For
 
@@ -38,3 +39,15 @@ The team report is shareable with collaborators, but it is not a public page. It
 4. Optional GitHub Pages publish: add `--github-pages` after reviewing the draft.
 
 Chronicle records a `kind: "release"` item only on a real approved ship. That release item stores the version and the ids of the public items that were included, so the next draft starts after the last release.
+
+## Action Intent Boundary
+
+The static project-brain HTML page has no direct filesystem or agent power. When you click an action in the page, it records a small intent in browser storage and lets you copy or download `chronicle-actions.json`.
+
+The next coding-agent session applies that file with:
+
+```bash
+node ./bin/chronicle.js actions apply --actions chronicle-actions.json --render
+```
+
+Chronicle only accepts known low-risk status changes. Unknown actions, unknown targets, and unsupported statuses are skipped.

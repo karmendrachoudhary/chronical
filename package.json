@@ -1,6 +1,6 @@
 {
   "name": "chronicle-devlog",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Capture AI coding sessions once and render Chronicle project, team, and public views.",
   "type": "module",
   "bin": {
@@ -10,9 +10,12 @@
     "capture:sample": "node ./bin/chronicle.js capture --hook-input tests/fixtures/claude-stop-hook.json --source-tool claude-code --transcript tests/fixtures/claude-session.jsonl --store data/chronicle.json --output dist/devlog.html --render",
     "render": "node ./bin/chronicle.js render personal --store data/chronicle.json --output dist/devlog.html",
     "render:brain": "node ./bin/chronicle.js render brain --store data/chronicle.json --output dist/project-brain.html --index _INDEX.md",
+    "render:indexes": "node ./bin/chronicle.js render indexes --store data/chronicle.json --root .",
     "render:team": "node ./bin/chronicle.js render team --store data/chronicle.json --output dist/team-report.html",
     "public:draft": "node ./bin/chronicle.js public draft --store data/chronicle.json --output dist/public-draft.html",
     "public:ship": "node ./bin/chronicle.js public ship --store data/chronicle.json --output dist/public/index.html",
+    "import:superpowers": "node ./bin/chronicle.js import superpowers --store data/chronicle.json --render",
+    "actions:apply": "node ./bin/chronicle.js actions apply --actions chronicle-actions.json --store data/chronicle.json --render",
     "validate": "node ./bin/chronicle.js validate --store data/chronicle.json",
     "test": "node --test"
   },

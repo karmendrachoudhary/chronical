@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
+import { applyActionIntents } from "../src/actions/applyActions.js";
 import { captureSession } from "../src/capture/captureSession.js";
 import { main } from "../src/cli.js";
+import { importSuperpowersArtifacts } from "../src/integrations/superpowers.js";
 import { renderProjectBrain, renderProjectBrainToFile } from "../src/render/projectBrain.js";
-import { renderRootIndexToFile } from "../src/render/projectIndex.js";
+import { renderProjectIndexesToFiles, renderRootIndexToFile } from "../src/render/projectIndex.js";
 import { renderPublicBuildPage } from "../src/render/publicBuildPage.js";
 import { renderTeamReport, renderTeamReportToFile } from "../src/render/teamReport.js";
 import { detectSecrets } from "../src/safety/redaction.js";
@@ -187,11 +189,111 @@ test("project brain renders every main tab, search data, and no external depende
   }
   assert.match(html, /window.__CHRONICLE_DATA__/);
   assert.match(html, /data-go-tab="files"/);
+  assert.match(html, /data-intent-action="set_feature_status"/);
+  assert.match(html, /Pending intents/);
   assert.doesNotMatch(html, /https?:\/\//);
   assert.doesNotMatch(html, /<script src=/i);
   assert.doesNotMatch(html, /<link/i);
   assert.doesNotMatch(html, /onclick=/i);
   assert.doesNotMatch(html, /CSS\.escape/);
+});
+
+test("Superpowers importer maps specs and plans into Chronicle items", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "chronicle-superpowers-"));
+  try {
+    const storePath = path.join(tempDir, "chronicle.json");
+    await mkdir(path.join(tempDir, "docs/superpowers/specs"), { recursive: true });
+    await mkdir(path.join(tempDir, "docs/superpowers/plans"), { recursive: true });
+    await writeFile(path.join(tempDir, "docs/superpowers/specs/auth-design.md"), `# Passwordless Auth Design
+
+Build passwordless login.
+
+## Decisions
+
+- Use email magic links first.
+`, "utf8");
+    await writeFile(path.join(tempDir, "docs/superpowers/plans/auth-plan.md"), `# Auth Implementation Plan
+
+### Task 1: Add token table
+
+**Files:**
+- Create: \`src/auth/tokens.js\`
+
+- [x] Write failing test
+- [x] Implement table helper
+
+### Task 2: Add login form
+
+**Files:**
+- Create: \`src/auth/login.js\`
+
+- [ ] Write failing test
+- [ ] Implement form
+`, "utf8");
+
+    const result = await importSuperpowersArtifacts({ storePath, rootDir: tempDir });
+    const store = JSON.parse(await readFile(storePath, "utf8"));
+
+    assert.equal(result.specCount, 1);
+    assert.equal(result.planCount, 1);
+    assert.ok(store.items.some((item) => item.kind === "feature" && item.title === "Passwordless Auth Design"));
+    assert.ok(store.items.some((item) => item.kind === "decision" && item.title === "Use email magic links first."));
+    assert.ok(store.items.some((item) => item.kind === "roadmap" && item.title === "Add token table" && item.status === "completed"));
+    assert.ok(store.items.some((item) => item.kind === "event" && item.title.includes("Completed Add token table")));
+    assert.ok(store.items.some((item) => item.kind === "roadmap" && item.title === "Add login form" && item.status === "planned"));
+
+    const secondResult = await importSuperpowersArtifacts({ storePath, rootDir: tempDir });
+    assert.equal(secondResult.insertedCount, 0);
+    assert.ok(secondResult.updatedCount > 0);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("action intents apply safe status updates to the store", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "chronicle-actions-"));
+  try {
+    const storePath = path.join(tempDir, "chronicle.json");
+    const actionsPath = path.join(tempDir, "chronicle-actions.json");
+    await writeFile(storePath, `${JSON.stringify({ schema_version: 2, generated_by: "test", items: [
+      baseItem({ id: "feat_action", kind: "feature", title: "Actionable feature", status: "planned" }),
+      baseItem({ id: "plan_action", kind: "roadmap", title: "Actionable roadmap", status: "planned" }),
+    ] }, null, 2)}\n`, "utf8");
+    await writeFile(actionsPath, JSON.stringify({ schema_version: 1, intents: [
+      { action: "set_feature_status", target: "feat_action", value: "completed" },
+      { action: "set_roadmap_status", target: "plan_action", value: "in_progress" },
+      { action: "delete_file", target: "feat_action", value: "completed" },
+    ] }, null, 2), "utf8");
+
+    const result = await applyActionIntents({ storePath, actionsPath });
+    const store = JSON.parse(await readFile(storePath, "utf8"));
+
+    assert.equal(result.appliedCount, 2);
+    assert.equal(result.skippedCount, 1);
+    assert.equal(store.items.find((item) => item.id === "feat_action").status, "completed");
+    assert.equal(store.items.find((item) => item.id === "plan_action").status, "in_progress");
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("project indexes generate useful per-folder maps only where warranted", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "chronicle-indexes-"));
+  try {
+    const storePath = path.join(tempDir, "chronicle.json");
+    await writeFile(storePath, `${JSON.stringify({ schema_version: 2, generated_by: "test", items: folderIndexItems() }, null, 2)}\n`, "utf8");
+
+    const result = await renderProjectIndexesToFiles({ storePath, rootDir: tempDir, minFiles: 2, minItems: 2 });
+    const rootIndex = await readFile(path.join(tempDir, "_INDEX.md"), "utf8");
+    const folderIndex = await readFile(path.join(tempDir, "src/render", "_INDEX.md"), "utf8");
+
+    assert.equal(result.folders.length, 1);
+    assert.match(rootIndex, /Generated by Chronicle/);
+    assert.match(folderIndex, /src\/render Index/);
+    await assert.rejects(() => readFile(path.join(tempDir, "src/store", "_INDEX.md"), "utf8"), /ENOENT/);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
 });
 
 test("project brain and root index render to files", async () => {
@@ -466,6 +568,47 @@ function publicStoreItems() {
       visibility: "private",
       session_id: "private-session",
       source_tool: "codex",
+    }),
+  ];
+}
+
+function folderIndexItems() {
+  return [
+    baseItem({
+      id: "file_render_a",
+      kind: "file",
+      title: "src/render/a.js",
+      summary: "Renders A.",
+      raw_summary: "Renders A.",
+      files: ["src/render/a.js"],
+      data: { path: "src/render/a.js", role: "Renders A." },
+    }),
+    baseItem({
+      id: "file_render_b",
+      kind: "file",
+      title: "src/render/b.js",
+      summary: "Renders B.",
+      raw_summary: "Renders B.",
+      files: ["src/render/b.js"],
+      data: { path: "src/render/b.js", role: "Renders B." },
+    }),
+    baseItem({
+      id: "file_store_single",
+      kind: "file",
+      title: "src/store/one.js",
+      summary: "Stores one thing.",
+      raw_summary: "Stores one thing.",
+      files: ["src/store/one.js"],
+      data: { path: "src/store/one.js", role: "Stores one thing." },
+    }),
+    baseItem({
+      id: "feat_render",
+      kind: "feature",
+      title: "Render workflow",
+      summary: "Uses render files.",
+      raw_summary: "Uses render files.",
+      status: "in_progress",
+      files: ["src/render/a.js", "src/render/b.js"],
     }),
   ];
 }
