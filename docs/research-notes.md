@@ -37,10 +37,22 @@ Chronicle should read these files as input, never require Superpowers as a runti
 
 ## Hook Support
 
-- Claude Code supports lifecycle hooks including `SessionStart`, `Stop`, `PreCompact`, and `PostToolUse`.
-- Codex supports lifecycle hooks including `SessionStart`, `Stop`, `PreCompact`, `PostCompact`, `UserPromptSubmit`, and `PostToolUse`.
-- Gemini CLI supports hooks including `SessionStart`, `SessionEnd`, `BeforeTool`, `AfterTool`, `BeforeAgent`, `AfterAgent`, and `PreCompress`.
+- Claude Code supports lifecycle hooks including `SessionStart`, `Stop`, `PreCompact`, and `PostToolUse`. Chronicle's example uses `Stop` and should be merged into `.claude/settings.json`.
+- Codex supports lifecycle hooks including `SessionStart`, `Stop`, `PreCompact`, `PostCompact`, `UserPromptSubmit`, and `PostToolUse`. Codex `Stop` is turn-scoped, and Codex can load plugin-bundled hooks from `hooks/hooks.json`.
+- Gemini CLI supports hooks including `SessionStart`, `SessionEnd`, `BeforeTool`, `AfterTool`, `BeforeAgent`, `AfterAgent`, and `PreCompress`. Gemini `SessionEnd` is best-effort and does not wait for completion, so Chronicle uses `AfterAgent` for reliable writes.
+
+Detailed cross-tool notes live in `docs/cross-tool-support.md`.
 
 ## Phase 1 Through 3 Decision
 
-Phase 1 consumes hook input and transcript files directly. Phase 2 stores captured work as unified `items`, not events only. Phase 3 renders the private project brain and root `_INDEX.md` from that same item list. Phase 4 adds the team report. Phase 5 adds the public build log. Phase 6 reads Superpowers specs/plans, exports safe action intents, and writes usefulness-based folder indexes. This keeps Chronicle small, transparent, and independent while still allowing future imports from memory tools and similar agent frameworks.
+Phase 1 consumes hook input and transcript files directly. Phase 2 stores captured work as unified `items`, not events only. Phase 3 renders the private project brain and root `_INDEX.md` from that same item list. Phase 4 adds the team report. Phase 5 adds the public build log. Phase 6 reads Superpowers specs/plans, exports safe action intents, and writes usefulness-based folder indexes. Phase 7 adds open-source polish: license, contribution docs, cross-tool support notes, package metadata, and plugin screenshot metadata. This keeps Chronicle small, transparent, and independent while still allowing future imports from memory tools and similar agent frameworks.
+
+## Source Links
+
+- Claude Code hooks guide: https://code.claude.com/docs/en/hooks-guide
+- Claude Code hooks reference: https://code.claude.com/docs/en/hooks
+- Codex hooks: https://developers.openai.com/codex/hooks
+- Codex plugin packaging: https://developers.openai.com/codex/plugins/build
+- Gemini CLI hooks overview: https://github.com/google-gemini/gemini-cli/blob/main/docs/hooks/index.md
+- Gemini CLI hooks reference: https://github.com/google-gemini/gemini-cli/blob/main/docs/hooks/reference.md
+- Superpowers repository: https://github.com/obra/superpowers

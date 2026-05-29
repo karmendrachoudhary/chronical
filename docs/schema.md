@@ -9,7 +9,7 @@ The top-level shape is:
 ```json
 {
   "schema_version": 2,
-  "generated_by": "chronicle-devlog@0.5.0",
+  "generated_by": "chronicle-devlog@0.6.0",
   "items": []
 }
 ```

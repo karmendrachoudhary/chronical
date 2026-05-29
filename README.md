@@ -1,86 +1,126 @@
 # Chronicle
 
-Chronicle turns AI coding sessions into a private, self-updating devlog and project brain.
+Chronicle turns AI coding sessions into a private project brain, team-safe report, and public build log.
 
-Phase 1 through Phase 6 are working: Chronicle can capture a session, store it in one unified data file, validate safety rules, render the private personal devlog, render the richer project-brain HTML page, render a team-safe report, draft and ship an approval-gated public build log, import Superpowers artifacts, queue safe action intents, and regenerate root plus usefulness-based folder `_INDEX.md` maps for agents and humans.
+Plain English: Chronicle records the work once in `data/chronicle.json`, then renders different outputs from that same clean data file.
+
+![Chronicle project brain screenshot](assets/project-brain.png)
 
 ## What Works Now
 
-- Capture from hook JSON on stdin or from a fixture file.
-- Parse local JSONL transcripts from Claude Code, Codex, or Gemini-style sessions.
-- Store clean unified items in `data/chronicle.json`.
-- Render a self-contained personal devlog HTML file.
-- Render the full project-brain HTML page with Overview, Features, Files, Timeline, Decisions, Roadmap, cross-links, and Command-K search.
-- Render a team report that only shows `visibility: team` and `visibility: public` items.
-- Draft a public build-in-public page from `visibility: public` items only.
-- Ship the public page only after an explicit `--approve` flag, then record a release marker.
-- Optionally publish the public HTML to the `gh-pages` branch for GitHub Pages.
-- Import Superpowers specs and plans as Chronicle features, decisions, roadmap items, and completed timeline events.
-- Queue safe browser action intents from the project-brain page, then apply them next session with the CLI.
-- Regenerate the root `_INDEX.md` project map and selective per-folder `_INDEX.md` maps from the same Chronicle data.
-- Keep every item `private` by default.
-- Flag likely secrets and keep those items private.
-- Validate the unified schema and public-safety rules.
+Phase 1 through Phase 7 are complete:
 
-Final cross-tool and open-source polish is planned for Phase 7.
+- Capture from Claude Code, Codex, and Gemini CLI hook JSON.
+- Parse local JSONL transcripts when a tool exposes a transcript path.
+- Store work as one unified `items` model in `data/chronicle.json`.
+- Render the private project brain with Overview, Features, Files, Timeline, Decisions, Roadmap, cross-links, and Command-K search.
+- Render the simpler personal devlog for compatibility.
+- Render a team report that skips private items.
+- Draft and ship a public build log with an explicit approval gate.
+- Publish the public page to GitHub Pages with `--github-pages`.
+- Import Superpowers specs and plans without depending on Superpowers at runtime.
+- Queue safe action intents from the project-brain page and apply them next session.
+- Generate root and selective folder `_INDEX.md` maps for agents and humans.
+- Validate schema and public-safety rules.
+- Ship as an MIT-licensed open-source Codex plugin/package structure.
 
-## Try It Locally
+## Install Locally
 
-This repo uses Node.js 20 or newer.
+Chronicle needs Node.js 20 or newer.
 
 ```bash
+git clone https://github.com/karmendrachoudhary/chronical.git
+cd chronical
 npm test
+npm link
+chronicle --help
+```
+
+If you do not want to use `npm link`, run commands with:
+
+```bash
+node ./bin/chronicle.js --help
+```
+
+## Try the Demo
+
+```bash
 npm run capture:sample
 npm run validate
-open dist/devlog.html
 open dist/project-brain.html
+open dist/devlog.html
 open dist/team-report.html
 npm run public:draft -- --version v0.1.0
 open dist/public-draft.html
-npm run import:superpowers
-npm run render:indexes
 ```
 
-The sample command reads `tests/fixtures/claude-session.jsonl`, appends one private event item to `data/chronicle.json`, renders the personal devlog, renders the project brain, renders the team report, and refreshes `_INDEX.md`.
+The sample command reads `tests/fixtures/claude-session.jsonl`, appends one private event item to `data/chronicle.json`, renders the local HTML outputs, and refreshes `_INDEX.md`.
 
 ## Main Commands
 
 ```bash
-node ./bin/chronicle.js capture --hook-input - --source-tool claude-code --render --hook-mode
-node ./bin/chronicle.js render personal --store data/chronicle.json --output dist/devlog.html
-node ./bin/chronicle.js render brain --store data/chronicle.json --output dist/project-brain.html --index _INDEX.md
-node ./bin/chronicle.js render team --store data/chronicle.json --output dist/team-report.html
-node ./bin/chronicle.js public draft --version v0.1.0 --store data/chronicle.json --output dist/public-draft.html
-node ./bin/chronicle.js public ship --version v0.1.0 --approve --store data/chronicle.json --output dist/public/index.html
-node ./bin/chronicle.js import superpowers --store data/chronicle.json --render
-node ./bin/chronicle.js actions apply --actions chronicle-actions.json --store data/chronicle.json --render
-node ./bin/chronicle.js render indexes --store data/chronicle.json --root .
-node ./bin/chronicle.js validate --store data/chronicle.json
+chronicle capture --hook-input - --source-tool claude-code --render --hook-mode
+chronicle render brain --store data/chronicle.json --output dist/project-brain.html
+chronicle render personal --store data/chronicle.json --output dist/devlog.html
+chronicle render team --store data/chronicle.json --output dist/team-report.html
+chronicle render indexes --store data/chronicle.json --root .
+chronicle import superpowers --store data/chronicle.json --render
+chronicle actions apply --actions chronicle-actions.json --store data/chronicle.json --render
+chronicle public draft --version v0.1.0 --store data/chronicle.json --output dist/public-draft.html
+chronicle public ship --version v0.1.0 --approve --store data/chronicle.json --output dist/public/index.html
+chronicle validate --store data/chronicle.json
 ```
 
-Plain language version:
+Command meanings:
 
-- `capture` reads what the coding tool gives Chronicle at the end of a session.
-- Chronicle turns that messy transcript into one clean event item.
-- `render personal` rebuilds the private HTML page from the Chronicle data file.
-- `render brain` rebuilds the richer project brain and root `_INDEX.md` from that same data file.
-- `render team` rebuilds a team-safe HTML report from explicitly shared items.
-- `public draft` builds a public-safe HTML draft from explicitly public items.
+- `capture` reads hook input and writes a private Chronicle item.
+- `render brain` rebuilds the main private project brain and index files.
+- `render team` rebuilds the team-safe report.
+- `public draft` builds a public-safe draft for review.
 - `public ship` requires `--approve`, writes the final public HTML, and records a release marker.
-- `import superpowers` reads Superpowers specs and plans without depending on Superpowers at runtime.
-- `actions apply` applies the safe browser intents that you exported from the project-brain page.
-- `render indexes` refreshes root and selective folder `_INDEX.md` map files.
-- `validate` checks the Chronicle data file against the schema and safety rules.
+- `import superpowers` reads Superpowers specs/plans and maps them into Chronicle items.
+- `actions apply` applies safe browser-exported status changes from `chronicle-actions.json`.
+- `validate` checks the local store and public-safety rules.
+
+## Hook Setup
+
+Chronicle includes example hook configs in `hooks/`.
+
+### Claude Code
+
+Merge `hooks/claude/hooks.json` into `.claude/settings.json`.
+
+The example uses `Stop`:
+
+```bash
+node "$(git rev-parse --show-toplevel)/bin/chronicle.js" capture --hook-input - --source-tool claude-code --render --hook-mode
+```
+
+### Codex
+
+Copy `hooks/codex/hooks.json` to `.codex/hooks.json`, or install Chronicle as a Codex plugin. The plugin-bundled hook lives at `hooks/hooks.json`.
+
+Codex `Stop` is turn-scoped, so Chronicle captures after completed turns rather than only at full session exit.
+
+### Gemini CLI
+
+Merge `hooks/gemini/settings.json` into `.gemini/settings.json`.
+
+Chronicle uses Gemini `AfterAgent`, because Gemini `SessionEnd` is best-effort and does not wait for the hook to finish. This gives safer writes, but it captures per completed agent turn.
+
+More detail is in `docs/cross-tool-support.md`.
 
 ## Superpowers Integration
 
-Chronicle integrates with Superpowers by reading its artifacts, not by copying its workflow. Plain English: Superpowers drives the work; Chronicle records and presents the result.
+Chronicle integrates with Superpowers by reading artifacts, not by copying its workflow.
+
+Superpowers drives the work. Chronicle records and presents the result.
 
 Chronicle reads:
 
 - `docs/superpowers/specs/*.md` as feature and decision items.
 - `docs/superpowers/plans/*.md` as roadmap items.
-- completed plan tasks where every checkbox is checked as shipped features and timeline events.
+- completed plan tasks as shipped features and timeline events.
 
 Run:
 
@@ -88,11 +128,13 @@ Run:
 npm run import:superpowers
 ```
 
-The import is read-only for Superpowers files. It upserts Chronicle items into `data/chronicle.json`, so rerunning the import refreshes changed specs/plans instead of duplicating them.
+The import is read-only for Superpowers files and upserts Chronicle items, so rerunning it refreshes existing imports instead of duplicating them.
 
 ## Action Intents
 
-The project-brain page can queue safe intents, such as marking a feature shipped or moving a roadmap item in progress. The page never edits files and never runs an agent. It stores the queue in your browser, then lets you copy or download `chronicle-actions.json`.
+The project-brain page can queue safe intents, such as marking a feature shipped or moving a roadmap item in progress.
+
+The browser page never edits files and never runs an agent. It stores the queue in browser storage and lets you copy or download `chronicle-actions.json`.
 
 Next session, place that file at the repo root and run:
 
@@ -104,7 +146,7 @@ Chronicle only accepts known safe actions: feature status changes and roadmap st
 
 ## Public Build Log Safety
 
-The public page is allowlist-only. Plain English: Chronicle publishes nothing unless you mark an item `visibility: public`, and even then the public renderer only uses `public_summary`, safe dates, safe type labels, and safe tech tags. It never renders `raw_summary`, private `summary`, file paths, transcript paths, or source references.
+The public page is allowlist-only. Chronicle publishes nothing unless an item is marked `visibility: public`, and even then the public renderer only reads `public_summary`.
 
 Draft first:
 
@@ -113,7 +155,7 @@ npm run public:draft -- --version v0.1.0
 open dist/public-draft.html
 ```
 
-After you review the draft, ship it locally:
+After review, ship locally:
 
 ```bash
 npm run public:ship -- --version v0.1.0 --approve
@@ -125,47 +167,19 @@ To test the GitHub Pages path without pushing:
 npm run public:ship -- --version v0.1.0 --approve --github-pages --dry-run
 ```
 
-To publish to GitHub Pages, run the same command without `--dry-run`. Chronicle writes the generated file as `index.html` on the `gh-pages` branch and pushes that branch.
-
-## Team Report Safety
-
-The team report is filtered. It skips `private` items, never renders `raw_summary`, and never renders file paths from `files`.
-
-For `visibility: team`, it uses the item `summary`. For `visibility: public`, it uses `public_summary` only. Plain English: team items can include internal status, but public items still follow the stricter public-summary rule.
-
-## Claude Code Hook Example
-
-Copy `hooks/claude/hooks.json` into `.claude/hooks.json`, or adapt the command into your existing Claude Code hook config.
-
-The hook runs on `Stop` and calls:
-
-```bash
-node "$(git rev-parse --show-toplevel)/bin/chronicle.js" capture --hook-input - --source-tool claude-code --render --hook-mode
-```
-
-## Codex Hook Example
-
-Copy `hooks/codex/hooks.json` into `.codex/hooks.json`, or install Chronicle as a Codex plugin. The root `hooks/hooks.json` is the plugin-bundled Codex hook config.
-
-## Gemini Hook Example
-
-Copy the `hooks` object from `hooks/gemini/settings.json` into your `.gemini/settings.json` file.
-
-Gemini uses `SessionEnd`, so it is closer to a true session-end capture than Claude/Codex `Stop`, which can be turn-scoped.
+To publish to GitHub Pages, run the same command without `--dry-run`.
 
 ## Data Model
 
 The schema is documented in `docs/schema.md` and machine-readable at `schemas/item.schema.json`.
 
-Important default: items are private unless a later phase explicitly marks them public.
+Important default: every item is private unless you explicitly mark it as `team` or `public`.
 
-Safety rules are documented in `docs/safety.md`.
+## Generated Index Files
 
-Generated index-file trade-offs are documented in `docs/generated-indexes.md`.
+Chronicle writes `_INDEX.md` at the repo root and selective per-folder `_INDEX.md` files only where they are useful. These are private local map files, not public docs.
 
-## Optional Summarizer
-
-Chronicle uses an offline summarizer by default. If you later want an LLM pass, set `capture.summarizerCommand` in `chronicle.config.json`. Chronicle sends parsed session JSON to that command on stdin and expects a JSON summary on stdout. If the command fails, Chronicle falls back to the offline summary.
+Details: `docs/generated-indexes.md`.
 
 ## Research Foundation
 
@@ -173,19 +187,19 @@ Chronicle does not try to replace memory systems. The research notes are in `doc
 
 Chronicle stands on:
 
-- Official hook systems from Claude Code, Codex, and Gemini CLI.
-- Raw local transcript files where the tool exposes them.
-- Ideas from `daaain/claude-code-log` about reading Claude JSONL transcripts.
-- Superpowers artifacts through a read-only import. Superpowers drives work; Chronicle records and presents it.
+- official hook systems from Claude Code, Codex, and Gemini CLI;
+- raw local transcript files where tools expose them;
+- ideas from `daaain/claude-code-log` about reading Claude JSONL transcripts;
+- Superpowers artifacts through a read-only import.
 
 Chronicle does not depend on GPL-licensed session logger code.
 
-## Current Roadmap
+## Contributing
 
-1. Phase 1: capture pipeline and personal devlog proof.
-2. Phase 2: unified item schema, summarization, validation, and safety.
-3. Phase 3: full project-brain page with Overview, Features, Files, Timeline, Decisions, Roadmap, cross-links, Command-K search, and root `_INDEX.md`.
-4. Phase 4: team report view.
-5. Phase 5: public build-in-public page with approval and GitHub Pages publishing.
-6. Phase 6: Superpowers ingestion, action intents, and generated folder indexes.
-7. Phase 7: cross-tool and open-source polish.
+- Read `CONTRIBUTING.md` for setup and safety rules.
+- Read `docs/template-guide.md` before adding a new rendered view.
+- Read `SECURITY.md` before changing public rendering, action intents, or generated index cleanup.
+
+## License
+
+Chronicle is MIT licensed. See `LICENSE`.

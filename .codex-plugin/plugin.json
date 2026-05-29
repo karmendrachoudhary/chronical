@@ -1,11 +1,14 @@
 {
   "name": "chronicle",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Capture AI coding sessions and render private, team, and public Chronicle views.",
   "author": {
     "name": "Chronicle contributors"
   },
+  "homepage": "https://github.com/karmendrachoudhary/chronical#readme",
+  "repository": "https://github.com/karmendrachoudhary/chronical",
   "license": "MIT",
+  "keywords": ["ai-coding", "devlog", "project-brain", "claude-code", "codex", "gemini-cli", "superpowers"],
   "skills": "./skills/",
   "interface": {
     "displayName": "Chronicle",
@@ -14,7 +17,9 @@
     "developerName": "Chronicle contributors",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/karmendrachoudhary/chronical",
     "brandColor": "#116A6C",
+    "screenshots": ["./assets/project-brain.png"],
     "defaultPrompt": [
       "Use Chronicle to render my project brain.",
       "Use Chronicle to render my team report.",

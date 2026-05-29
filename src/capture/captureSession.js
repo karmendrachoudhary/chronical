@@ -35,7 +35,7 @@ export async function captureSession({
     : await summarizeSession({ parsed, hookInput, sourceTool: resolvedSourceTool, summarizerCommand });
   const rawSummary = summary.rawSummary;
   const files = Array.from(new Set(parsed.files)).sort();
-  const turnId = hookInput?.turn_id ?? null;
+  const turnId = hookInput?.turn_id ?? hookInput?.timestamp ?? null;
   const createdAt = nowIso();
 
   const event = {
@@ -175,7 +175,7 @@ function detectSourceTool(hookInput, transcriptPath) {
   if (text.includes(".codex") || text.includes("codex")) {
     return "codex";
   }
-  if (text.includes(".gemini") || text.includes("gemini") || hookInput?.hook_event_name === "SessionEnd") {
+  if (text.includes(".gemini") || text.includes("gemini") || ["SessionEnd", "AfterAgent"].includes(hookInput?.hook_event_name)) {
     return "gemini";
   }
   return "claude-code";

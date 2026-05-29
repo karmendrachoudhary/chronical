@@ -35,8 +35,15 @@ export async function summarizeSession({ parsed, hookInput, sourceTool, summariz
 }
 
 export function buildOfflineSummary({ parsed, hookInput, sourceTool }) {
-  const userGoal = lastUseful(parsed.userPrompts);
-  const assistantOutcome = lastUseful(parsed.assistantMessages);
+  const hookPrompt = typeof hookInput?.prompt === "string" ? hookInput.prompt : "";
+  let hookAssistantMessage = "";
+  if (typeof hookInput?.prompt_response === "string") {
+    hookAssistantMessage = hookInput.prompt_response;
+  } else if (typeof hookInput?.last_assistant_message === "string") {
+    hookAssistantMessage = hookInput.last_assistant_message;
+  }
+  const userGoal = lastUseful(parsed.userPrompts) || hookPrompt;
+  const assistantOutcome = lastUseful(parsed.assistantMessages) || hookAssistantMessage;
   const files = parsed.files.slice(0, 12);
   const tools = parsed.tools.slice(0, 8);
   const commands = parsed.commands.slice(0, 5);
@@ -78,10 +85,6 @@ export function buildOfflineSummary({ parsed, hookInput, sourceTool }) {
   if (parsed.notes.length > 0) {
     lines.push(`Capture note: ${parsed.notes.join(" ")}`);
   }
-  if (hookInput?.last_assistant_message && !assistantOutcome) {
-    lines.push(`Last assistant message: ${cleanText(hookInput.last_assistant_message, 900)}`);
-  }
-
   const rawSummary = lines.join("\n");
   return {
     title: buildTitle({ assistantOutcome, userGoal, files }),

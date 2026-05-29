@@ -1,6 +1,6 @@
 {
   "hooks": {
-    "SessionEnd": [
+    "AfterAgent": [
       {
         "hooks": [
           {
@@ -8,7 +8,7 @@
             "name": "chronicle-capture",
             "command": "node \"$(git rev-parse --show-toplevel)/bin/chronicle.js\" capture --hook-input - --source-tool gemini --render --hook-mode",
             "timeout": 60000,
-            "description": "Capture a Chronicle devlog event when Gemini CLI ends a session."
+            "description": "Capture a Chronicle devlog event after Gemini CLI completes an agent turn."
           }
         ]
       }

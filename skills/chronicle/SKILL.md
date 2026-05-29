@@ -16,3 +16,4 @@ Important defaults:
 - Superpowers import is read-only for `docs/superpowers/**` and upserts into `data/chronicle.json`.
 - The project-brain page queues action intents; apply them with `chronicle actions apply` in the next agent session.
 - Validation rejects unsafe public text.
+- Cross-tool support details are documented in `docs/cross-tool-support.md`.

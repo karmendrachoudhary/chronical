@@ -1,11 +1,35 @@
 {
   "name": "chronicle-devlog",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Capture AI coding sessions once and render Chronicle project, team, and public views.",
   "type": "module",
+  "author": "Chronicle contributors",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/karmendrachoudhary/chronical.git"
+  },
+  "bugs": {
+    "url": "https://github.com/karmendrachoudhary/chronical/issues"
+  },
+  "homepage": "https://github.com/karmendrachoudhary/chronical#readme",
   "bin": {
     "chronicle": "./bin/chronicle.js"
   },
+  "files": [
+    "bin/",
+    "src/",
+    "schemas/",
+    "hooks/",
+    "skills/",
+    "docs/",
+    "assets/",
+    ".codex-plugin/",
+    "chronicle.config.json",
+    "README.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "LICENSE"
+  ],
   "scripts": {
     "capture:sample": "node ./bin/chronicle.js capture --hook-input tests/fixtures/claude-stop-hook.json --source-tool claude-code --transcript tests/fixtures/claude-session.jsonl --store data/chronicle.json --output dist/devlog.html --render",
     "render": "node ./bin/chronicle.js render personal --store data/chronicle.json --output dist/devlog.html",
@@ -22,9 +46,11 @@
   "keywords": [
     "ai-coding",
     "devlog",
+    "project-brain",
     "claude-code",
     "codex",
-    "gemini-cli"
+    "gemini-cli",
+    "superpowers"
   ],
   "license": "MIT",
   "engines": {

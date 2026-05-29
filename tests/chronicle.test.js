@@ -68,6 +68,34 @@ test("captureSession appends a private event and renders HTML", async () => {
   }
 });
 
+test("captureSession summarizes Gemini AfterAgent hook input without a transcript", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "chronicle-gemini-"));
+  try {
+    const storePath = path.join(tempDir, "chronicle.json");
+
+    await captureSession({
+      cwd: tempDir,
+      hookInput: {
+        session_id: "gemini-session-001",
+        hook_event_name: "AfterAgent",
+        timestamp: "2026-05-29T12:00:00.000Z",
+        prompt: "Add the team report renderer.",
+        prompt_response: "Implemented the team report renderer and verified it with npm test.",
+      },
+      sourceTool: "gemini",
+      storePath,
+      outputPath: path.join(tempDir, "devlog.html"),
+    });
+
+    const store = JSON.parse(await readFile(storePath, "utf8"));
+    assert.equal(store.items[0].source_tool, "gemini");
+    assert.match(store.items[0].raw_summary, /Add the team report renderer/);
+    assert.match(store.items[0].raw_summary, /Implemented the team report renderer/);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
 test("team report excludes private items and never renders raw summaries", () => {
   const html = renderTeamReport(teamReportItems(), { storePath: "data/chronicle.json" });
 
