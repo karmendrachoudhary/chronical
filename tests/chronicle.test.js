@@ -4,8 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { captureSession } from "../src/capture/captureSession.js";
+import { main } from "../src/cli.js";
 import { renderProjectBrain, renderProjectBrainToFile } from "../src/render/projectBrain.js";
 import { renderRootIndexToFile } from "../src/render/projectIndex.js";
+import { renderTeamReport, renderTeamReportToFile } from "../src/render/teamReport.js";
 import { detectSecrets } from "../src/safety/redaction.js";
 import { validateEvent } from "../src/schema/validateEvents.js";
 
@@ -28,6 +30,7 @@ test("captureSession appends a private event and renders HTML", async () => {
       storePath,
       outputPath,
       brainOutputPath: path.join(tempDir, "project-brain.html"),
+      teamOutputPath: path.join(tempDir, "team-report.html"),
       rootIndexOutputPath: path.join(tempDir, "_INDEX.md"),
       renderAfterCapture: true,
     });
@@ -54,6 +57,44 @@ test("captureSession appends a private event and renders HTML", async () => {
 
     const indexMarkdown = await readFile(path.join(tempDir, "_INDEX.md"), "utf8");
     assert.match(indexMarkdown, /Chronicle Project Index/);
+
+    const teamHtml = await readFile(path.join(tempDir, "team-report.html"), "utf8");
+    assert.match(teamHtml, /Team Report/);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("team report excludes private items and never renders raw summaries", () => {
+  const html = renderTeamReport(teamReportItems(), { storePath: "data/chronicle.json" });
+
+  assert.match(html, /What Shipped/);
+  assert.match(html, /Blocked/);
+  assert.match(html, /Decisions/);
+  assert.match(html, /Team-safe shipped summary/);
+  assert.match(html, /Public launch note/);
+  assert.doesNotMatch(html, /Private roadmap spike/);
+  assert.doesNotMatch(html, /PRIVATE_RAW_DO_NOT_RENDER/);
+  assert.doesNotMatch(html, /TEAM_RAW_DO_NOT_RENDER/);
+  assert.doesNotMatch(html, /PUBLIC_RAW_DO_NOT_RENDER/);
+  assert.doesNotMatch(html, /PUBLIC_SUMMARY_DO_NOT_RENDER/);
+  assert.doesNotMatch(html, /src\/secret-file.js/);
+});
+
+test("team report renders to file through renderer and CLI", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "chronicle-team-"));
+  try {
+    const storePath = path.join(tempDir, "chronicle.json");
+    const rendererPath = path.join(tempDir, "team-renderer.html");
+    const cliPath = path.join(tempDir, "team-cli.html");
+    await writeFile(storePath, `${JSON.stringify({ schema_version: 2, generated_by: "test", items: teamReportItems() }, null, 2)}\n`, "utf8");
+
+    const result = await renderTeamReportToFile({ storePath, outputPath: rendererPath });
+    await main(["render", "team", "--store", storePath, "--output", cliPath]);
+
+    assert.equal(result.visibleCount, 4);
+    assert.match(await readFile(rendererPath, "utf8"), /Chronicle Team Report/);
+    assert.match(await readFile(cliPath, "utf8"), /Team-safe shipped summary/);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
@@ -198,6 +239,71 @@ function sampleItems() {
       summary: "A single file works offline and is easy to share privately.",
       raw_summary: "A single file works offline and is easy to share privately.",
       links: { features: ["feat_brain"], files: [], decisions: [], roadmap: [], events: [], releases: [] },
+    }),
+  ];
+}
+
+function teamReportItems() {
+  return [
+    baseItem({
+      id: "evt_private_hidden",
+      kind: "event",
+      type: "feature_added",
+      title: "Private roadmap spike",
+      summary: "Private summary should not render.",
+      raw_summary: "PRIVATE_RAW_DO_NOT_RENDER src/secret-file.js",
+      visibility: "private",
+      status: "completed",
+      session_id: "private-session",
+      source_tool: "codex",
+    }),
+    baseItem({
+      id: "evt_team_shipped",
+      kind: "event",
+      type: "feature_added",
+      title: "Team shipped item",
+      summary: "Team-safe shipped summary",
+      raw_summary: "TEAM_RAW_DO_NOT_RENDER",
+      visibility: "team",
+      status: "completed",
+      session_id: "team-session",
+      source_tool: "codex",
+      tech: ["Node.js"],
+      data: { time_spent_minutes: 95 },
+    }),
+    baseItem({
+      id: "evt_public_launch",
+      kind: "event",
+      type: "feature_added",
+      title: "Public launch item",
+      summary: "PUBLIC_SUMMARY_DO_NOT_RENDER",
+      raw_summary: "PUBLIC_RAW_DO_NOT_RENDER",
+      public_summary: "Public launch note",
+      visibility: "public",
+      status: "completed",
+      session_id: "public-session",
+      source_tool: "claude-code",
+    }),
+    baseItem({
+      id: "evt_team_blocked",
+      kind: "event",
+      type: "note",
+      title: "Waiting on deploy token",
+      summary: "Blocked until deployment credentials are confirmed.",
+      raw_summary: "BLOCKED_RAW_DO_NOT_RENDER",
+      visibility: "team",
+      status: "blocked",
+      session_id: "blocked-session",
+      source_tool: "gemini",
+    }),
+    baseItem({
+      id: "dec_team_architecture",
+      kind: "decision",
+      title: "Keep reports static",
+      summary: "Static reports are easy to share and review.",
+      raw_summary: "DECISION_RAW_DO_NOT_RENDER",
+      visibility: "team",
+      status: "completed",
     }),
   ];
 }

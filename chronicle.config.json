@@ -2,6 +2,7 @@
   "store": "data/chronicle.json",
   "personalOutput": "dist/devlog.html",
   "brainOutput": "dist/project-brain.html",
+  "teamOutput": "dist/team-report.html",
   "rootIndexOutput": "_INDEX.md",
   "defaultVisibility": "private",
   "capture": {

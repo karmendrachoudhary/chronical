@@ -2,7 +2,7 @@
 
 Chronicle turns AI coding sessions into a private, self-updating devlog and project brain.
 
-Phase 1 through Phase 3 are working: Chronicle can capture a session, store it in one unified data file, validate safety rules, render the private personal devlog, render the richer project-brain HTML page, and regenerate a root `_INDEX.md` map for agents and humans.
+Phase 1 through Phase 4 are working: Chronicle can capture a session, store it in one unified data file, validate safety rules, render the private personal devlog, render the richer project-brain HTML page, render a team-safe report, and regenerate a root `_INDEX.md` map for agents and humans.
 
 ## What Works Now
 
@@ -11,12 +11,13 @@ Phase 1 through Phase 3 are working: Chronicle can capture a session, store it i
 - Store clean unified items in `data/chronicle.json`.
 - Render a self-contained personal devlog HTML file.
 - Render the full project-brain HTML page with Overview, Features, Files, Timeline, Decisions, Roadmap, cross-links, and Command-K search.
+- Render a team report that only shows `visibility: team` and `visibility: public` items.
 - Regenerate the root `_INDEX.md` project map from the same Chronicle data.
 - Keep every item `private` by default.
 - Flag likely secrets and keep those items private.
 - Validate the unified schema and public-safety rules.
 
-Team reports, public publishing, action intents, per-folder indexes, Superpowers ingestion, approval gates, and GitHub Pages deploys are planned for later phases.
+Public publishing, action intents, per-folder indexes, Superpowers ingestion, approval gates, and GitHub Pages deploys are planned for later phases.
 
 ## Try It Locally
 
@@ -28,9 +29,10 @@ npm run capture:sample
 npm run validate
 open dist/devlog.html
 open dist/project-brain.html
+open dist/team-report.html
 ```
 
-The sample command reads `tests/fixtures/claude-session.jsonl`, appends one private event item to `data/chronicle.json`, renders the personal devlog, renders the project brain, and refreshes `_INDEX.md`.
+The sample command reads `tests/fixtures/claude-session.jsonl`, appends one private event item to `data/chronicle.json`, renders the personal devlog, renders the project brain, renders the team report, and refreshes `_INDEX.md`.
 
 ## Main Commands
 
@@ -38,6 +40,7 @@ The sample command reads `tests/fixtures/claude-session.jsonl`, appends one priv
 node ./bin/chronicle.js capture --hook-input - --source-tool claude-code --render --hook-mode
 node ./bin/chronicle.js render personal --store data/chronicle.json --output dist/devlog.html
 node ./bin/chronicle.js render brain --store data/chronicle.json --output dist/project-brain.html --index _INDEX.md
+node ./bin/chronicle.js render team --store data/chronicle.json --output dist/team-report.html
 node ./bin/chronicle.js validate --store data/chronicle.json
 ```
 
@@ -47,7 +50,14 @@ Plain language version:
 - Chronicle turns that messy transcript into one clean event item.
 - `render personal` rebuilds the private HTML page from the Chronicle data file.
 - `render brain` rebuilds the richer project brain and root `_INDEX.md` from that same data file.
+- `render team` rebuilds a team-safe HTML report from explicitly shared items.
 - `validate` checks the Chronicle data file against the schema and safety rules.
+
+## Team Report Safety
+
+The team report is filtered. It skips `private` items, never renders `raw_summary`, and never renders file paths from `files`.
+
+For `visibility: team`, it uses the item `summary`. For `visibility: public`, it uses `public_summary` only. Plain English: team items can include internal status, but public items still follow the stricter public-summary rule.
 
 ## Claude Code Hook Example
 

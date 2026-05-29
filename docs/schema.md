@@ -33,7 +33,7 @@ The machine-readable schema is `schemas/item.schema.json`. The old `schemas/even
 - `title`: short label for cards and search results.
 - `summary`: private description used by the project-brain page.
 - `raw_summary`: private detailed capture notes. This may include file paths.
-- `public_summary`: safe publishable line. Public views may read this only for `visibility: public` items.
+- `public_summary`: safe publishable line. Public views and public items inside team reports may read this only for `visibility: public` items.
 - `date`: local calendar date.
 - `tech`: technology tags like `Node.js` or `Auth.js`.
 - `tags`: lightweight labels for filtering/search.
@@ -55,6 +55,8 @@ For `kind: "event"`, Chronicle also requires:
 ## Safety Rule
 
 The default visibility is always `private`. Public renderers must only read items with `visibility: public`, and must use `public_summary`, not `raw_summary` or `summary`.
+
+Team renderers must only read items with `visibility: team` or `visibility: public`. For team items, they may read `summary`. For public items, they must still read `public_summary` only.
 
 Chronicle validates public items strictly. A public item is invalid if `title`, `summary`, or `public_summary` contains secret-looking values, local paths, internal URLs, or sensitive env var names.
 

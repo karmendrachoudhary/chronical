@@ -6,6 +6,7 @@ import { parseGeminiTranscript } from "../parsers/gemini.js";
 import { renderPersonalDevlogToFile } from "../render/personalDevlog.js";
 import { renderProjectBrainToFile } from "../render/projectBrain.js";
 import { renderRootIndexToFile } from "../render/projectIndex.js";
+import { renderTeamReportToFile } from "../render/teamReport.js";
 import { collectEventSafetyFlags, redactSecrets } from "../safety/redaction.js";
 import { appendEvents } from "../store/eventsStore.js";
 import { formatLocalDate, nowIso } from "../utils/date.js";
@@ -19,6 +20,7 @@ export async function captureSession({
   storePath,
   outputPath,
   brainOutputPath = null,
+  teamOutputPath = null,
   rootIndexOutputPath = null,
   renderAfterCapture = false,
   summaryOverride,
@@ -96,6 +98,10 @@ export async function captureSession({
     if (brainOutputPath) {
       const brainResult = await renderProjectBrainToFile({ storePath, outputPath: brainOutputPath });
       renderedPaths.push(brainResult.outputPath);
+    }
+    if (teamOutputPath) {
+      const teamResult = await renderTeamReportToFile({ storePath, outputPath: teamOutputPath });
+      renderedPaths.push(teamResult.outputPath);
     }
     if (rootIndexOutputPath) {
       const indexResult = await renderRootIndexToFile({ storePath, outputPath: rootIndexOutputPath });

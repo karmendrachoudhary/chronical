@@ -1,6 +1,6 @@
 {
   "name": "chronicle-devlog",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Capture AI coding sessions once and render a private Chronicle project brain.",
   "type": "module",
   "bin": {
@@ -10,6 +10,7 @@
     "capture:sample": "node ./bin/chronicle.js capture --hook-input tests/fixtures/claude-stop-hook.json --source-tool claude-code --transcript tests/fixtures/claude-session.jsonl --store data/chronicle.json --output dist/devlog.html --render",
     "render": "node ./bin/chronicle.js render personal --store data/chronicle.json --output dist/devlog.html",
     "render:brain": "node ./bin/chronicle.js render brain --store data/chronicle.json --output dist/project-brain.html --index _INDEX.md",
+    "render:team": "node ./bin/chronicle.js render team --store data/chronicle.json --output dist/team-report.html",
     "validate": "node ./bin/chronicle.js validate --store data/chronicle.json",
     "test": "node --test"
   },

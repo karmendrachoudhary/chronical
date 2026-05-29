@@ -8,6 +8,7 @@ The current build does not publish anything yet, but the safety foundation is in
 - Secret-looking values in `raw_summary` force the item to stay private.
 - Secret-looking values, local paths, internal URLs, and env var names in `title`, `summary`, or `public_summary` make a public item invalid.
 - The validator rejects hand-edited public items that contain unsafe publishable text.
+- The team report skips `private` items and never renders `raw_summary` or file-path lists.
 
 ## What Chronicle Scans For
 
@@ -23,3 +24,5 @@ The current build does not publish anything yet, but the safety foundation is in
 `raw_summary` is private and may include local file paths. Public renderers in later phases must never read it. They must only read `public_summary` from items already marked `visibility: public`.
 
 The project-brain page and `_INDEX.md` are private-by-default local artifacts. They can show file paths and project structure, so Chronicle should not publish them automatically.
+
+The team report is shareable with collaborators, but it is not a public page. It only shows items explicitly marked `team` or `public`. Public items still use `public_summary` only.

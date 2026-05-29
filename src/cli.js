@@ -4,6 +4,7 @@ import { captureSession } from "./capture/captureSession.js";
 import { renderPersonalDevlogToFile } from "./render/personalDevlog.js";
 import { renderProjectBrainToFile } from "./render/projectBrain.js";
 import { renderRootIndexToFile } from "./render/projectIndex.js";
+import { renderTeamReportToFile } from "./render/teamReport.js";
 import { validateEventStore } from "./schema/validateEvents.js";
 import { loadEventStore } from "./store/eventsStore.js";
 import { loadChronicleConfig } from "./utils/config.js";
@@ -13,12 +14,14 @@ const HELP = `Chronicle
 Usage:
   chronicle capture [--hook-input -|file] [--source-tool claude-code|codex|gemini] [--transcript file] [--render]
   chronicle render brain [--store data/chronicle.json] [--output dist/project-brain.html] [--index _INDEX.md]
+  chronicle render team [--store data/chronicle.json] [--output dist/team-report.html]
   chronicle render personal [--store data/chronicle.json] [--output dist/devlog.html]
   chronicle validate [--store data/chronicle.json]
 
 Examples:
   chronicle capture --hook-input - --source-tool claude-code --render --hook-mode
   chronicle render brain --store data/chronicle.json --output dist/project-brain.html
+  chronicle render team --store data/chronicle.json --output dist/team-report.html
   chronicle render personal --store data/chronicle.json --output dist/devlog.html
   chronicle validate --store data/chronicle.json
 `;
@@ -61,6 +64,16 @@ export async function main(argv) {
     return;
   }
 
+  if (command === "render" && subcommand === "team") {
+    const options = parseOptions(rest);
+    const config = await loadChronicleConfig();
+    const storePath = options.store ?? config.store;
+    const outputPath = options.output ?? config.teamOutput ?? "dist/team-report.html";
+    const result = await renderTeamReportToFile({ storePath, outputPath });
+    console.log(`Rendered ${result.visibleCount} team-visible item(s) to ${outputPath}`);
+    return;
+  }
+
   if (command === "validate") {
     const options = parseOptions([subcommand, ...rest].filter(Boolean));
     const config = await loadChronicleConfig();
@@ -92,6 +105,7 @@ async function runCapture(argv) {
       storePath: options.store ?? config.store,
       outputPath: options.output ?? config.personalOutput,
       brainOutputPath: options["brain-output"] ?? config.brainOutput,
+      teamOutputPath: options["team-output"] ?? config.teamOutput,
       rootIndexOutputPath: options.index ?? config.rootIndexOutput,
       renderAfterCapture: Boolean(options.render),
       summaryOverride: options.summary,
