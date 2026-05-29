@@ -89,6 +89,8 @@ Command meanings:
 
 Chronicle includes example hook configs in `hooks/`. For v1 release quality, use Claude Code and Codex first.
 
+Plain English: hooks make Chronicle run automatically after an AI coding turn. Manual commands also work, so you can ask Claude Code or Codex to run them whenever you want to refresh the project brain.
+
 ### Claude Code
 
 Merge `hooks/claude/hooks.json` into `.claude/settings.json`.
@@ -99,11 +101,68 @@ The example uses `Stop`:
 node "$(git rev-parse --show-toplevel)/bin/chronicle.js" capture --hook-input - --source-tool claude-code --render --hook-mode
 ```
 
+After this, Claude Code can update Chronicle automatically at the end of a turn. You can also ask Claude Code to run any shared command from the section below.
+
 ### Codex
 
 Copy `hooks/codex/hooks.json` to `.codex/hooks.json`, or install Chronicle as a Codex plugin. The plugin-bundled hook lives at `hooks/hooks.json`.
 
 Codex `Stop` is turn-scoped, so Chronicle captures after completed turns rather than only at full session exit.
+
+After this, Codex can update Chronicle automatically at the end of a turn. You can also ask Codex to run any shared command from the section below.
+
+## Using Chronicle In Claude Code And Codex
+
+Chronicle is a normal Node CLI, so the same terminal commands work in both Claude Code and Codex once the repo has Chronicle installed or linked.
+
+The only command that changes per tool is automatic capture:
+
+```bash
+# Claude Code hook capture
+chronicle capture --hook-input - --source-tool claude-code --render --hook-mode
+
+# Codex hook capture
+chronicle capture --hook-input - --source-tool codex --render --hook-mode
+```
+
+These shared commands work in both Claude Code and Codex:
+
+```bash
+# Rebuild the main private project brain
+chronicle render brain --store data/chronicle.json --output dist/project-brain.html
+
+# Rebuild folder maps for agents and humans
+chronicle render indexes --store data/chronicle.json --root .
+
+# Rebuild the JSON cache from Markdown source files
+chronicle source sync --store data/chronicle.json --root .
+
+# Validate the local Chronicle data and public-safety rules
+chronicle validate --store data/chronicle.json
+
+# Import Superpowers specs and plans, then rerender
+chronicle import superpowers --store data/chronicle.json --render
+
+# Apply reviewed action intents exported from the HTML page
+chronicle actions apply --approve --actions chronicle-actions.json --store data/chronicle.json --render
+
+# Draft a public build log for review
+chronicle public draft --version v0.1.0 --store data/chronicle.json --output dist/public-draft.html
+```
+
+Useful prompts to give either agent:
+
+- `Run Chronicle validate and fix any data issues.`
+- `Render the Chronicle project brain and folder indexes.`
+- `Import Superpowers artifacts into Chronicle and rerender.`
+- `Apply the reviewed Chronicle action intents.`
+- `Draft the Chronicle public build log for version v0.1.0, but do not ship it.`
+
+Use this only after reviewing the draft:
+
+```bash
+chronicle public ship --version v0.1.0 --approve --store data/chronicle.json --output dist/public/index.html
+```
 
 ### Gemini CLI Experimental
 
