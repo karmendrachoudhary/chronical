@@ -2,7 +2,7 @@
 
 Chronicle follows one rule: capture once, render many.
 
-Plain English: do not add a second data store for a new page. Add a renderer that reads the existing `items` list from `data/chronicle.json`.
+Plain English: do not add a second data store for a new page. Add a renderer that reads the existing `items` list from the generated cache after Markdown source has synced.
 
 ## Where Renderers Live
 

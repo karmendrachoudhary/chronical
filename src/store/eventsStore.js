@@ -1,6 +1,6 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { readFile } from "node:fs/promises";
 import { assertValidChronicleStore, assertValidItems } from "../schema/validateEvents.js";
+import { writeJsonFileAtomic } from "../utils/atomic.js";
 import { formatLocalDate, nowIso } from "../utils/date.js";
 
 const EMPTY_LINKS = {
@@ -12,7 +12,7 @@ const EMPTY_LINKS = {
   releases: [],
 };
 
-const GENERATED_BY = "chronicle-devlog@0.6.0";
+const GENERATED_BY = "chronicle-devlog@1.0.0";
 
 export async function loadEventStore(storePath) {
   return loadChronicleStore(storePath);
@@ -179,8 +179,7 @@ async function writeItems(storePath, items) {
 
   assertValidChronicleStore(nextStore);
 
-  await mkdir(path.dirname(storePath), { recursive: true });
-  await writeFile(storePath, `${JSON.stringify(toPersistedStore(nextStore), null, 2)}\n`, "utf8");
+  await writeJsonFileAtomic(storePath, toPersistedStore(nextStore), { backup: true });
   return nextStore;
 }
 

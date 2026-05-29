@@ -1,6 +1,6 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
-import { upsertItems } from "../store/eventsStore.js";
+import { syncMarkdownSourceToStore, writeItemsMarkdown } from "../source/markdownSource.js";
 import { formatLocalDate } from "../utils/date.js";
 import { cleanText } from "../utils/text.js";
 
@@ -16,6 +16,7 @@ const EMPTY_LINKS = {
 export async function importSuperpowersArtifacts({
   storePath,
   rootDir = process.cwd(),
+  sourceDir = "chronicle",
   specsDir = "docs/superpowers/specs",
   plansDir = "docs/superpowers/plans",
 }) {
@@ -30,8 +31,9 @@ export async function importSuperpowersArtifacts({
     return { insertedCount: 0, updatedCount: 0, itemCount: 0, specCount: specs.length, planCount: plans.length };
   }
 
-  const result = await upsertItems(storePath, items);
-  return { ...result, itemCount: items.length, specCount: specs.length, planCount: plans.length };
+  await writeItemsMarkdown({ rootDir, sourceDir, items, subdir: path.join("imports", "superpowers") });
+  const result = await syncMarkdownSourceToStore({ rootDir, sourceDir, storePath });
+  return { insertedCount: result.insertedCount, updatedCount: result.updatedCount, itemCount: items.length, specCount: specs.length, planCount: plans.length };
 }
 
 export function specFileToItems(file) {

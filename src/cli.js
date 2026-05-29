@@ -9,6 +9,7 @@ import { renderProjectIndexesToFiles } from "./render/projectIndex.js";
 import { renderTeamReportToFile } from "./render/teamReport.js";
 import { draftPublicBuildPage, shipPublicBuildPage } from "./public/workflow.js";
 import { validateEventStore } from "./schema/validateEvents.js";
+import { syncMarkdownSourceToStore } from "./source/markdownSource.js";
 import { loadEventStore } from "./store/eventsStore.js";
 import { loadChronicleConfig } from "./utils/config.js";
 
@@ -20,8 +21,9 @@ Usage:
   chronicle render indexes [--store data/chronicle.json] [--root .]
   chronicle render team [--store data/chronicle.json] [--output dist/team-report.html]
   chronicle render personal [--store data/chronicle.json] [--output dist/devlog.html]
+  chronicle source sync [--store data/chronicle.json] [--root .]
   chronicle import superpowers [--store data/chronicle.json] [--root .] [--render]
-  chronicle actions apply [--actions chronicle-actions.json] [--store data/chronicle.json] [--render]
+  chronicle actions apply --approve [--actions chronicle-actions.json] [--store data/chronicle.json] [--render]
   chronicle public draft [--version v0.1.0] [--store data/chronicle.json] [--output dist/public-draft.html]
   chronicle public ship --version v0.1.0 --approve [--store data/chronicle.json] [--output dist/public/index.html] [--github-pages] [--dry-run]
   chronicle validate [--store data/chronicle.json]
@@ -32,8 +34,9 @@ Examples:
   chronicle render indexes --store data/chronicle.json --root .
   chronicle render team --store data/chronicle.json --output dist/team-report.html
   chronicle render personal --store data/chronicle.json --output dist/devlog.html
+  chronicle source sync --store data/chronicle.json --root .
   chronicle import superpowers --store data/chronicle.json --render
-  chronicle actions apply --actions chronicle-actions.json --store data/chronicle.json --render
+  chronicle actions apply --approve --actions chronicle-actions.json --store data/chronicle.json --render
   chronicle public draft --version v0.1.0 --store data/chronicle.json --output dist/public-draft.html
   chronicle public ship --version v0.1.0 --approve --store data/chronicle.json --output dist/public/index.html
   chronicle validate --store data/chronicle.json
@@ -55,9 +58,11 @@ export async function main(argv) {
   if (command === "render" && subcommand === "personal") {
     const options = parseOptions(rest);
     const config = await loadChronicleConfig();
+    const storePath = options.store ?? config.store;
+    await syncSourceIfConfigured({ config, storePath, rootDir: options.root });
     const outputPath = options.output ?? config.personalOutput;
     const result = await renderPersonalDevlogToFile({
-      storePath: options.store ?? config.store,
+      storePath,
       outputPath,
     });
     console.log(`Rendered ${result.eventCount} event item(s) to ${outputPath}`);
@@ -68,8 +73,9 @@ export async function main(argv) {
     const options = parseOptions(rest);
     const config = await loadChronicleConfig();
     const storePath = options.store ?? config.store;
+    await syncSourceIfConfigured({ config, storePath, rootDir: options.root });
     const outputPath = options.output ?? config.brainOutput ?? "dist/project-brain.html";
-    const result = await renderProjectBrainToFile({ storePath, outputPath });
+    const result = await renderProjectBrainToFile({ storePath, outputPath, rootDir: options.root ?? process.cwd() });
     const indexPath = options.index ?? config.rootIndexOutput ?? "_INDEX.md";
     const indexResult = await renderProjectIndexesToFiles(projectIndexOptions({ config, storePath, rootIndexOutput: indexPath }));
     console.log(`Rendered ${result.itemCount} item(s) to ${outputPath}`);
@@ -82,6 +88,7 @@ export async function main(argv) {
     const options = parseOptions(rest);
     const config = await loadChronicleConfig();
     const storePath = options.store ?? config.store;
+    await syncSourceIfConfigured({ config, storePath, rootDir: options.root });
     const result = await renderProjectIndexesToFiles(projectIndexOptions({
       config,
       storePath,
@@ -99,6 +106,7 @@ export async function main(argv) {
     const options = parseOptions(rest);
     const config = await loadChronicleConfig();
     const storePath = options.store ?? config.store;
+    await syncSourceIfConfigured({ config, storePath, rootDir: options.root });
     const outputPath = options.output ?? config.teamOutput ?? "dist/team-report.html";
     const result = await renderTeamReportToFile({ storePath, outputPath });
     console.log(`Rendered ${result.visibleCount} team-visible item(s) to ${outputPath}`);
@@ -109,6 +117,7 @@ export async function main(argv) {
     const options = parseOptions(rest);
     const config = await loadChronicleConfig();
     const storePath = options.store ?? config.store;
+    await syncSourceIfConfigured({ config, storePath, rootDir: options.root });
     const outputPath = options.output ?? config.publicDraftOutput ?? "dist/public-draft.html";
     const version = options.version ?? "draft";
     const result = await draftPublicBuildPage({ storePath, outputPath, version });
@@ -123,6 +132,7 @@ export async function main(argv) {
     const options = parseOptions(rest);
     const config = await loadChronicleConfig();
     const storePath = options.store ?? config.store;
+    await syncSourceIfConfigured({ config, storePath, rootDir: options.root });
     const outputPath = options.output ?? config.publicOutput ?? "dist/public/index.html";
     const result = await shipPublicBuildPage({
       storePath,
@@ -133,6 +143,8 @@ export async function main(argv) {
       githubPages: Boolean(options["github-pages"]),
       pagesBranch: options["pages-branch"] ?? "gh-pages",
       pagesPath: options["pages-path"] ?? "index.html",
+      rootDir: options.root ?? process.cwd(),
+      sourceDir: options.source ?? config.sourceDir ?? "chronicle",
     });
     console.log(`Shipped ${result.updates.length} public update(s) to ${outputPath}${result.dryRun ? " (dry run)" : ""}`);
     if (!result.dryRun) {
@@ -151,14 +163,29 @@ export async function main(argv) {
     const result = await importSuperpowersArtifacts({
       storePath,
       rootDir: options.root ?? process.cwd(),
+      sourceDir: options.source ?? config.sourceDir ?? "chronicle",
       specsDir: options.specs ?? config.superpowers?.specsDir ?? "docs/superpowers/specs",
       plansDir: options.plans ?? config.superpowers?.plansDir ?? "docs/superpowers/plans",
     });
     console.log(`Imported ${result.itemCount} Superpowers item(s) from ${result.specCount} spec(s) and ${result.planCount} plan(s).`);
     console.log(`Inserted ${result.insertedCount}, updated ${result.updatedCount}.`);
     if (options.render) {
-      await renderAfterDataChange({ config, storePath });
+      await renderAfterDataChange({ config, storePath, rootDir: options.root ?? process.cwd() });
     }
+    return;
+  }
+
+  if (command === "source" && subcommand === "sync") {
+    const options = parseOptions(rest);
+    const config = await loadChronicleConfig();
+    const storePath = options.store ?? config.store;
+    const result = await syncMarkdownSourceToStore({
+      storePath,
+      rootDir: options.root ?? process.cwd(),
+      sourceDir: options.source ?? config.sourceDir ?? "chronicle",
+    });
+    console.log(`Synced ${result.itemCount} Markdown source item(s) into ${storePath}.`);
+    console.log(`Inserted ${result.insertedCount}, updated ${result.updatedCount}.`);
     return;
   }
 
@@ -166,14 +193,21 @@ export async function main(argv) {
     const options = parseOptions(rest);
     const config = await loadChronicleConfig();
     const storePath = options.store ?? config.store;
+    await syncSourceIfConfigured({ config, storePath, rootDir: options.root });
     const actionsPath = options.actions ?? config.actionIntentsPath ?? "chronicle-actions.json";
-    const result = await applyActionIntents({ storePath, actionsPath });
+    const result = await applyActionIntents({
+      storePath,
+      actionsPath,
+      rootDir: options.root ?? process.cwd(),
+      sourceDir: options.source ?? config.sourceDir ?? "chronicle",
+      approve: Boolean(options.approve),
+    });
     console.log(`Applied ${result.appliedCount} action intent(s) from ${actionsPath}.`);
     if (result.skippedCount > 0) {
       console.log(`Skipped ${result.skippedCount} action intent(s).`);
     }
     if (options.render) {
-      await renderAfterDataChange({ config, storePath });
+      await renderAfterDataChange({ config, storePath, rootDir: options.root ?? process.cwd() });
     }
     return;
   }
@@ -182,6 +216,7 @@ export async function main(argv) {
     const options = parseOptions([subcommand, ...rest].filter(Boolean));
     const config = await loadChronicleConfig();
     const storePath = options.store ?? config.store;
+    await syncSourceIfConfigured({ config, storePath, rootDir: options.root });
     const store = await loadEventStore(storePath);
     const errors = validateEventStore(store);
     if (errors.length > 0) {
@@ -194,10 +229,11 @@ export async function main(argv) {
   throw new Error(`Unknown command.\n\n${HELP}`);
 }
 
-async function renderAfterDataChange({ config, storePath }) {
+async function renderAfterDataChange({ config, storePath, rootDir = process.cwd() }) {
+  await syncSourceIfConfigured({ config, storePath, rootDir });
   const brainOutputPath = config.brainOutput ?? "dist/project-brain.html";
-  await renderProjectBrainToFile({ storePath, outputPath: brainOutputPath });
-  await renderProjectIndexesToFiles(projectIndexOptions({ config, storePath, rootIndexOutput: config.rootIndexOutput ?? "_INDEX.md" }));
+  await renderProjectBrainToFile({ storePath, outputPath: brainOutputPath, rootDir });
+  await renderProjectIndexesToFiles(projectIndexOptions({ config, storePath, rootDir, rootIndexOutput: config.rootIndexOutput ?? "_INDEX.md" }));
   console.log(`Rendered project brain to ${brainOutputPath}.`);
 }
 
@@ -228,6 +264,7 @@ async function runCapture(argv) {
       sourceTool: options["source-tool"],
       transcriptPath: options.transcript,
       storePath: options.store ?? config.store,
+      sourceDir: options.source ?? config.sourceDir ?? "chronicle",
       outputPath: options.output ?? config.personalOutput,
       brainOutputPath: options["brain-output"] ?? config.brainOutput,
       teamOutputPath: options["team-output"] ?? config.teamOutput,
@@ -260,6 +297,11 @@ async function runCapture(argv) {
     }
     throw error;
   }
+}
+
+async function syncSourceIfConfigured({ config, storePath, rootDir }) {
+  if (!config.sourceDir) return null;
+  return syncMarkdownSourceToStore({ storePath, rootDir: rootDir ?? process.cwd(), sourceDir: config.sourceDir });
 }
 
 function parseOptions(argv) {

@@ -43,9 +43,9 @@ Chronicle should read these files as input, never require Superpowers as a runti
 
 Detailed cross-tool notes live in `docs/cross-tool-support.md`.
 
-## Phase 1 Through 3 Decision
+## Current Architecture Decision
 
-Phase 1 consumes hook input and transcript files directly. Phase 2 stores captured work as unified `items`, not events only. Phase 3 renders the private project brain and root `_INDEX.md` from that same item list. Phase 4 adds the team report. Phase 5 adds the public build log. Phase 6 reads Superpowers specs/plans, exports safe action intents, and writes usefulness-based folder indexes. Phase 7 adds open-source polish: license, contribution docs, cross-tool support notes, package metadata, and plugin screenshot metadata. This keeps Chronicle small, transparent, and independent while still allowing future imports from memory tools and similar agent frameworks.
+Current v1 implementation consumes hook input and transcript files directly, writes durable Markdown source files under `chronicle/`, syncs a generated unified `items` cache, and renders the private project brain as the main artifact. Claude Code and Codex are the v1-supported tools. Gemini, team/public views, Superpowers import, and action intents exist, but the v1 product story stays focused on onboarding and handoff.
 
 ## Source Links
 

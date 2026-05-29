@@ -24,17 +24,17 @@ const TECH_RULES = [
   ["GitHub Pages", /github pages|gh-pages/i],
 ];
 
-export async function summarizeSession({ parsed, hookInput, sourceTool, summarizerCommand = null }) {
-  const fallback = buildOfflineSummary({ parsed, hookInput, sourceTool });
+export async function summarizeSession({ parsed, hookInput, sourceTool, summarizerCommand = null, gitFacts = null }) {
+  const fallback = buildOfflineSummary({ parsed, hookInput, sourceTool, gitFacts });
   if (!summarizerCommand) {
     return fallback;
   }
 
-  const external = await runExternalSummarizer({ summarizerCommand, parsed, hookInput, sourceTool }).catch(() => null);
+  const external = await runExternalSummarizer({ summarizerCommand, parsed, hookInput, sourceTool, gitFacts }).catch(() => null);
   return mergeSummary(fallback, external);
 }
 
-export function buildOfflineSummary({ parsed, hookInput, sourceTool }) {
+export function buildOfflineSummary({ parsed, hookInput, sourceTool, gitFacts = null }) {
   const hookPrompt = typeof hookInput?.prompt === "string" ? hookInput.prompt : "";
   let hookAssistantMessage = "";
   if (typeof hookInput?.prompt_response === "string") {
@@ -75,6 +75,15 @@ export function buildOfflineSummary({ parsed, hookInput, sourceTool }) {
   }
   if (packageChanges.length > 0) {
     lines.push(`Dependency changes: ${packageChanges.map((command) => cleanText(command, 140)).join(" | ")}`);
+  }
+  if (gitFacts?.available) {
+    lines.push(`Git: ${gitFacts.branch || "detached"}@${gitFacts.head || "unknown"}.`);
+    if (gitFacts.changed_files?.length) {
+      lines.push(`Working tree changes: ${gitFacts.changed_files.slice(0, 12).join(", ")}${gitFacts.changed_files.length > 12 ? ", ..." : ""}`);
+    }
+    if (gitFacts.diff_stat) {
+      lines.push(`Diff stat: ${cleanText(gitFacts.diff_stat, 420)}`);
+    }
   }
   if (decisions.length > 0) {
     lines.push(`Decisions: ${decisions.map((decision) => cleanText(decision, 220)).join(" | ")}`);
@@ -146,7 +155,7 @@ function mergeSummary(fallback, external) {
   };
 }
 
-function runExternalSummarizer({ summarizerCommand, parsed, hookInput, sourceTool }) {
+function runExternalSummarizer({ summarizerCommand, parsed, hookInput, sourceTool, gitFacts }) {
   return new Promise((resolve, reject) => {
     const child = spawn(summarizerCommand, { shell: true, stdio: ["pipe", "pipe", "pipe"] });
     const chunks = [];
@@ -171,7 +180,7 @@ function runExternalSummarizer({ summarizerCommand, parsed, hookInput, sourceToo
         reject(error);
       }
     });
-    child.stdin.end(JSON.stringify({ parsed, hookInput, sourceTool }));
+    child.stdin.end(JSON.stringify({ parsed, hookInput, sourceTool, gitFacts }));
   });
 }
 

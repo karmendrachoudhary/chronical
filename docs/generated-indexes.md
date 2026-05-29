@@ -1,32 +1,33 @@
 # Generated Index Files
 
-Chronicle generates `_INDEX.md` at the project root and, as of Phase 6, selective per-folder `_INDEX.md` files.
+Chronicle generates `_INDEX.md` at the project root and selective per-folder `_INDEX.md` plus `CLAUDE.md` files.
 
 Plain English: this file is a small map of the project. It helps a future coding agent or human understand what changed recently and which files matter without scanning the whole repo.
 
 ## Recommendation
 
-Use `_INDEX.md` for Chronicle-generated maps.
+Use `_INDEX.md` for human-readable maps, and `CLAUDE.md` for agent-readable folder maps in folders that are complex enough to warrant one.
 
 Why:
 
-- It is clearly a generated index, not instructions for an agent.
-- It is easy to find at the top of a folder listing.
-- It avoids competing with `AGENTS.md`, `CLAUDE.md`, or similar files that usually contain behavior instructions.
-- It can be regenerated safely because people are less likely to hand-edit it.
+- `_INDEX.md` is clearly a generated index, not behavior instructions.
+- `CLAUDE.md` is more likely to be noticed by Claude Code and similar tools, so Chronicle uses it as a generated map, not an instruction override.
+- Both files start with a Chronicle generated marker and can be regenerated safely.
+- Root-first still matters: Chronicle avoids cluttering every folder.
 
 ## Trade-Offs
 
-- `AGENTS.md` and `CLAUDE.md` may be read automatically by some tools, but they sound instructional. Chronicle maps should describe the project, not tell the agent how to behave.
+- `CLAUDE.md` may be read automatically by Claude Code. That is useful, but Chronicle must keep it descriptive and clearly generated.
+- `AGENTS.md` is broader, but using it in v1 would risk overriding project instructions in more tools.
 - `README.md` is familiar, but projects already use it for human-facing documentation. Rewriting it automatically would be risky.
-- `_INDEX.md` is explicit and low-risk, but agents may need to be told to read it until future integrations teach them to look for it.
 
 ## Current Scope
 
-Phase 6 writes:
+Current v1 behavior writes:
 
 - one root `_INDEX.md`, always;
-- per-folder `_INDEX.md` files only when the folder has enough tracked files or related Chronicle items to be useful.
+- per-folder `_INDEX.md` files only when the folder has enough tracked files or related Chronicle items to be useful;
+- matching per-folder `CLAUDE.md` agent maps for those same useful folders.
 
 The default threshold is `minFiles: 3` or `minItems: 2`. This keeps the repo clean. A folder with one obvious file does not need a generated map.
 
@@ -40,7 +41,11 @@ Chronicle also refreshes indexes when `render brain`, `capture --render`, `impor
 
 ## Stale Cleanup
 
-Generated index files start with a Chronicle marker. Chronicle only removes stale folder indexes that contain that marker. It will not delete a hand-written `_INDEX.md` that does not start with the marker.
+Generated index files start with a Chronicle marker. Chronicle only removes stale folder indexes that contain that marker. It will not delete a hand-written `_INDEX.md` or `CLAUDE.md` that does not start with the marker.
+
+## Freshness
+
+Folder `CLAUDE.md` maps include the git head used when they were generated and whether the folder had uncommitted changes. This is Chronicle's honest claim: the map tells you when it may be stale instead of pretending it is always perfect.
 
 ## Privacy
 

@@ -13,6 +13,7 @@ import { renderPublicBuildPage } from "../src/render/publicBuildPage.js";
 import { renderTeamReport, renderTeamReportToFile } from "../src/render/teamReport.js";
 import { detectSecrets } from "../src/safety/redaction.js";
 import { validateEvent } from "../src/schema/validateEvents.js";
+import { writeTextFileAtomic } from "../src/utils/atomic.js";
 
 test("captureSession appends a private event and renders HTML", async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "chronicle-"));
@@ -39,6 +40,10 @@ test("captureSession appends a private event and renders HTML", async () => {
     });
 
     assert.equal(result.appendedCount, 1);
+    assert.match(result.markdownPath, /chronicle\/sessions\/\d{4}-\d{2}-\d{2}\/evt_/);
+    const sourceMarkdown = await readFile(result.markdownPath, "utf8");
+    assert.match(sourceMarkdown, /---chronicle-json/);
+    assert.match(sourceMarkdown, /## Raw Notes/);
     const store = JSON.parse(await readFile(storePath, "utf8"));
     assert.equal(store.schema_version, 2);
     assert.equal(store.items.length, 1);
@@ -157,7 +162,7 @@ test("public draft and ship commands enforce approval", async () => {
     const shipPath = path.join(tempDir, "public", "index.html");
     await writeFile(storePath, `${JSON.stringify({ schema_version: 2, generated_by: "test", items: publicStoreItems() }, null, 2)}\n`, "utf8");
 
-    await main(["public", "draft", "--version", "v0.1.0", "--store", storePath, "--output", draftPath]);
+    await main(["public", "draft", "--version", "v0.1.0", "--store", storePath, "--output", draftPath, "--root", tempDir]);
     assert.match(await readFile(draftPath, "utf8"), /Added the public timeline/);
     assert.equal(JSON.parse(await readFile(storePath, "utf8")).items.some((item) => item.kind === "release"), false);
 
@@ -166,16 +171,17 @@ test("public draft and ship commands enforce approval", async () => {
       /--approve/,
     );
 
-    await main(["public", "ship", "--version", "v0.1.0", "--approve", "--dry-run", "--store", storePath, "--output", shipPath]);
+    await main(["public", "ship", "--version", "v0.1.0", "--approve", "--dry-run", "--store", storePath, "--output", shipPath, "--root", tempDir]);
     assert.match(await readFile(shipPath, "utf8"), /Added the public timeline/);
     assert.equal(JSON.parse(await readFile(storePath, "utf8")).items.some((item) => item.kind === "release"), false);
 
-    await main(["public", "ship", "--version", "v0.1.0", "--approve", "--store", storePath, "--output", shipPath]);
+    await main(["public", "ship", "--version", "v0.1.0", "--approve", "--store", storePath, "--output", shipPath, "--root", tempDir]);
     const shippedStore = JSON.parse(await readFile(storePath, "utf8"));
     const release = shippedStore.items.find((item) => item.kind === "release");
     assert.equal(release.visibility, "public");
     assert.equal(release.data.version, "v0.1.0");
     assert.deepEqual(release.data.item_ids, ["evt_public_good"]);
+    assert.match(await readFile(path.join(tempDir, "chronicle/releases", `${release.id}.md`), "utf8"), /v0.1.0 public release/);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
@@ -200,6 +206,8 @@ test("public GitHub Pages dry run does not record a release", async () => {
       storePath,
       "--output",
       outputPath,
+      "--root",
+      tempDir,
     ]);
 
     assert.match(await readFile(outputPath, "utf8"), /Added the public timeline/);
@@ -293,13 +301,16 @@ test("action intents apply safe status updates to the store", async () => {
       { action: "delete_file", target: "feat_action", value: "completed" },
     ] }, null, 2), "utf8");
 
-    const result = await applyActionIntents({ storePath, actionsPath });
+    await assert.rejects(() => applyActionIntents({ storePath, actionsPath, rootDir: tempDir }), /--approve/);
+
+    const result = await applyActionIntents({ storePath, actionsPath, rootDir: tempDir, approve: true });
     const store = JSON.parse(await readFile(storePath, "utf8"));
 
     assert.equal(result.appliedCount, 2);
     assert.equal(result.skippedCount, 1);
     assert.equal(store.items.find((item) => item.id === "feat_action").status, "completed");
     assert.equal(store.items.find((item) => item.id === "plan_action").status, "in_progress");
+    assert.match(await readFile(path.join(tempDir, "chronicle/actions/feat_action.md"), "utf8"), /Actionable feature/);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
@@ -314,10 +325,14 @@ test("project indexes generate useful per-folder maps only where warranted", asy
     const result = await renderProjectIndexesToFiles({ storePath, rootDir: tempDir, minFiles: 2, minItems: 2 });
     const rootIndex = await readFile(path.join(tempDir, "_INDEX.md"), "utf8");
     const folderIndex = await readFile(path.join(tempDir, "src/render", "_INDEX.md"), "utf8");
+    const agentMap = await readFile(path.join(tempDir, "src/render", "CLAUDE.md"), "utf8");
 
     assert.equal(result.folders.length, 1);
+    assert.equal(result.agentMaps.length, 1);
     assert.match(rootIndex, /Generated by Chronicle/);
     assert.match(folderIndex, /src\/render Index/);
+    assert.match(agentMap, /src\/render Agent Map/);
+    assert.match(agentMap, /Last verified git head/);
     await assert.rejects(() => readFile(path.join(tempDir, "src/store", "_INDEX.md"), "utf8"), /ENOENT/);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
@@ -338,6 +353,7 @@ test("project brain and root index render to files", async () => {
     assert.equal(brainResult.itemCount, 4);
     assert.equal(indexResult.itemCount, 4);
     assert.match(await readFile(brainPath, "utf8"), /Project Brain/);
+    assert.match(await readFile(brainPath, "utf8"), /Architecture Snapshot/);
     assert.match(await readFile(indexPath, "utf8"), /Key Files/);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
@@ -347,6 +363,20 @@ test("project brain and root index render to files", async () => {
 test("secret detector flags likely API keys", () => {
   const fakeKey = `sk-${"abcdefghijklmnopqrstuvwxyz123456"}`;
   assert.deepEqual(detectSecrets(`OPENAI_API_KEY=${fakeKey}`), ["openai_key", "generic_secret_assignment"]);
+});
+
+test("atomic text writes keep a backup when overwriting", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "chronicle-atomic-"));
+  try {
+    const filePath = path.join(tempDir, "source.md");
+    await writeTextFileAtomic(filePath, "first\n", { backup: true });
+    await writeTextFileAtomic(filePath, "second\n", { backup: true });
+
+    assert.equal(await readFile(filePath, "utf8"), "second\n");
+    assert.equal(await readFile(`${filePath}.bak`, "utf8"), "first\n");
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
 });
 
 test("captureSession forces secret-looking summaries to private", async () => {

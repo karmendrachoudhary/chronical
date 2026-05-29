@@ -3,12 +3,13 @@ import path from "node:path";
 import { parseClaudeTranscript } from "../parsers/claudeCode.js";
 import { parseCodexTranscript } from "../parsers/codex.js";
 import { parseGeminiTranscript } from "../parsers/gemini.js";
+import { collectGitFacts } from "../git/facts.js";
 import { renderPersonalDevlogToFile } from "../render/personalDevlog.js";
 import { renderProjectBrainToFile } from "../render/projectBrain.js";
 import { renderProjectIndexesToFiles } from "../render/projectIndex.js";
 import { renderTeamReportToFile } from "../render/teamReport.js";
 import { collectEventSafetyFlags, redactSecrets } from "../safety/redaction.js";
-import { appendEvents } from "../store/eventsStore.js";
+import { syncMarkdownSourceToStore, writeSessionItemMarkdown } from "../source/markdownSource.js";
 import { formatLocalDate, nowIso } from "../utils/date.js";
 import { classifyEventType, detectTech, inferStatus, summarizeSession } from "./summarize.js";
 
@@ -18,6 +19,7 @@ export async function captureSession({
   sourceTool,
   transcriptPath,
   storePath,
+  sourceDir = "chronicle",
   outputPath,
   brainOutputPath = null,
   teamOutputPath = null,
@@ -30,11 +32,13 @@ export async function captureSession({
   const resolvedSourceTool = normalizeSourceTool(sourceTool ?? detectSourceTool(hookInput, transcriptPath));
   const resolvedTranscriptPath = transcriptPath ?? hookInput?.transcript_path ?? hookInput?.agent_transcript_path ?? null;
   const parsed = await parseTranscript({ sourceTool: resolvedSourceTool, transcriptPath: resolvedTranscriptPath });
+  const parsedFiles = Array.from(new Set(parsed.files)).sort();
+  const gitFacts = await collectGitFacts({ rootDir: cwd ?? hookInput?.cwd ?? process.cwd(), files: parsedFiles });
   const summary = summaryOverride
     ? manualSummary(summaryOverride, parsed)
-    : await summarizeSession({ parsed, hookInput, sourceTool: resolvedSourceTool, summarizerCommand });
+    : await summarizeSession({ parsed, hookInput, sourceTool: resolvedSourceTool, summarizerCommand, gitFacts });
   const rawSummary = summary.rawSummary;
-  const files = Array.from(new Set(parsed.files)).sort();
+  const files = parsedFiles;
   const turnId = hookInput?.turn_id ?? hookInput?.timestamp ?? null;
   const createdAt = nowIso();
 
@@ -70,7 +74,7 @@ export async function captureSession({
       events: [],
       releases: [],
     },
-    data: {},
+    data: { git: gitFacts },
     safety_flags: [],
     created_at: createdAt,
     updated_at: createdAt,
@@ -85,7 +89,8 @@ export async function captureSession({
   }
 
   await mkdir(path.dirname(storePath), { recursive: true });
-  const appendResult = await appendEvents(storePath, [event]);
+  const markdownPath = await writeSessionItemMarkdown({ rootDir: cwd ?? process.cwd(), sourceDir, item: event });
+  const syncResult = await syncMarkdownSourceToStore({ rootDir: cwd ?? process.cwd(), sourceDir, storePath });
 
   const renderedPaths = [];
   let renderedPath = null;
@@ -94,10 +99,10 @@ export async function captureSession({
     renderedPath = renderResult.outputPath;
     renderedPaths.push(renderResult.outputPath);
 
-    // Phase 3 makes the project-brain HTML the main artifact. Keep the older
-    // personal devlog for compatibility, then refresh the brain and root map.
+    // The project-brain HTML is the main artifact. Keep the older personal
+    // devlog for compatibility, then refresh the brain and root map.
     if (brainOutputPath) {
-      const brainResult = await renderProjectBrainToFile({ storePath, outputPath: brainOutputPath });
+      const brainResult = await renderProjectBrainToFile({ storePath, outputPath: brainOutputPath, rootDir: cwd ?? process.cwd() });
       renderedPaths.push(brainResult.outputPath);
     }
     if (teamOutputPath) {
@@ -116,8 +121,9 @@ export async function captureSession({
 
   return {
     sourceTool: resolvedSourceTool,
-    appendedCount: appendResult.appendedCount,
-    skippedCount: appendResult.skippedCount,
+    appendedCount: syncResult.insertedCount,
+    skippedCount: syncResult.updatedCount,
+    markdownPath,
     renderedPath,
     renderedPaths,
   };

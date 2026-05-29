@@ -1,10 +1,16 @@
 import { readFile } from "node:fs/promises";
-import { loadChronicleStore, upsertItems } from "../store/eventsStore.js";
+import path from "node:path";
+import { syncMarkdownSourceToStore, writeItemsMarkdown } from "../source/markdownSource.js";
+import { loadChronicleStore } from "../store/eventsStore.js";
 
 const ALLOWED_ACTIONS = new Set(["set_feature_status", "set_roadmap_status"]);
 const ALLOWED_STATUSES = new Set(["completed", "blocked", "in_progress", "planned", "idea", "unknown"]);
 
-export async function applyActionIntents({ storePath, actionsPath }) {
+export async function applyActionIntents({ storePath, actionsPath, rootDir = process.cwd(), sourceDir = "chronicle", approve = false }) {
+  if (!approve) {
+    throw new Error("Refusing to apply action intents without --approve. Review chronicle-actions.json first, then rerun with --approve.");
+  }
+
   const store = await loadChronicleStore(storePath);
   const actions = await loadActionFile(actionsPath);
   const byId = new Map(store.items.map((item) => [item.id, item]));
@@ -22,7 +28,8 @@ export async function applyActionIntents({ storePath, actionsPath }) {
   }
 
   if (updated.length > 0) {
-    await upsertItems(storePath, updated);
+    await writeItemsMarkdown({ rootDir, sourceDir, items: updated, subdir: path.join("actions") });
+    await syncMarkdownSourceToStore({ rootDir, sourceDir, storePath });
   }
 
   return { appliedCount: updated.length, skippedCount: skipped.length, skipped };

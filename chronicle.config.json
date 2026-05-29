@@ -1,5 +1,6 @@
 {
   "store": "data/chronicle.json",
+  "sourceDir": "chronicle",
   "personalOutput": "dist/devlog.html",
   "brainOutput": "dist/project-brain.html",
   "teamOutput": "dist/team-report.html",
@@ -14,6 +15,7 @@
   },
   "folderIndexes": {
     "fileName": "_INDEX.md",
+    "agentFileName": "CLAUDE.md",
     "minFiles": 3,
     "minItems": 2,
     "cleanStale": true,

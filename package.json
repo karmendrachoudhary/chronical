@@ -1,7 +1,7 @@
 {
   "name": "chronicle-devlog",
-  "version": "0.6.0",
-  "description": "Capture AI coding sessions once and render Chronicle project, team, and public views.",
+  "version": "1.0.0",
+  "description": "Generate a private project brain for onboarding and handoff from Claude Code and Codex sessions.",
   "type": "module",
   "author": "Chronicle contributors",
   "repository": {
@@ -19,6 +19,7 @@
     "bin/",
     "src/",
     "schemas/",
+    "scripts/",
     "hooks/",
     "skills/",
     "docs/",
@@ -26,6 +27,7 @@
     ".codex-plugin/",
     "chronicle.config.json",
     "README.md",
+    "CHANGELOG.md",
     "CONTRIBUTING.md",
     "SECURITY.md",
     "LICENSE"
@@ -35,11 +37,13 @@
     "render": "node ./bin/chronicle.js render personal --store data/chronicle.json --output dist/devlog.html",
     "render:brain": "node ./bin/chronicle.js render brain --store data/chronicle.json --output dist/project-brain.html --index _INDEX.md",
     "render:indexes": "node ./bin/chronicle.js render indexes --store data/chronicle.json --root .",
+    "source:sync": "node ./bin/chronicle.js source sync --store data/chronicle.json --root .",
     "render:team": "node ./bin/chronicle.js render team --store data/chronicle.json --output dist/team-report.html",
     "public:draft": "node ./bin/chronicle.js public draft --store data/chronicle.json --output dist/public-draft.html",
     "public:ship": "node ./bin/chronicle.js public ship --store data/chronicle.json --output dist/public/index.html",
     "import:superpowers": "node ./bin/chronicle.js import superpowers --store data/chronicle.json --render",
-    "actions:apply": "node ./bin/chronicle.js actions apply --actions chronicle-actions.json --store data/chronicle.json --render",
+    "actions:apply": "node ./bin/chronicle.js actions apply --approve --actions chronicle-actions.json --store data/chronicle.json --render",
+    "smoke:v1": "node ./scripts/v1-smoke.js",
     "validate": "node ./bin/chronicle.js validate --store data/chronicle.json",
     "test": "node --test"
   },

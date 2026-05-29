@@ -4,7 +4,7 @@ import path from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { renderPublicBuildPageToFile } from "../render/publicBuildPage.js";
-import { appendItems } from "../store/eventsStore.js";
+import { syncMarkdownSourceToStore, writeItemMarkdown } from "../source/markdownSource.js";
 import { formatLocalDate, nowIso } from "../utils/date.js";
 
 const execFileAsync = promisify(execFile);
@@ -31,6 +31,8 @@ export async function shipPublicBuildPage({
   githubPages = false,
   pagesBranch = "gh-pages",
   pagesPath = "index.html",
+  rootDir = process.cwd(),
+  sourceDir = "chronicle",
 }) {
   if (!approve) {
     throw new Error("Refusing to ship public page without --approve. Draft first, review the HTML, then ship with --approve.");
@@ -48,7 +50,10 @@ export async function shipPublicBuildPage({
   }
 
   if (!dryRun) {
-    releaseResult = await appendItems(storePath, [createReleaseItem({ version, outputPath, model: renderResult })]);
+    const releaseItem = createReleaseItem({ version, outputPath, model: renderResult });
+    await writeItemMarkdown({ rootDir, sourceDir, item: releaseItem, subdir: "releases" });
+    const syncResult = await syncMarkdownSourceToStore({ rootDir, sourceDir, storePath });
+    releaseResult = { appendedCount: syncResult.insertedCount, skippedCount: syncResult.updatedCount };
   }
 
   return {

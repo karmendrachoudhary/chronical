@@ -1,7 +1,7 @@
 {
   "name": "chronicle",
-  "version": "0.6.0",
-  "description": "Capture AI coding sessions and render private, team, and public Chronicle views.",
+  "version": "1.0.0",
+  "description": "Generate a private project brain for onboarding and handoff from Claude Code and Codex sessions.",
   "author": {
     "name": "Chronicle contributors"
   },
@@ -13,7 +13,7 @@
   "interface": {
     "displayName": "Chronicle",
     "shortDescription": "Turn AI coding sessions into Chronicle views.",
-    "longDescription": "Chronicle captures session summaries through lifecycle hooks and renders a self-contained personal devlog, project-brain HTML page, team report, public build log, Superpowers imports, action intents, and generated project indexes from a local item store.",
+    "longDescription": "Chronicle captures Claude Code and Codex session summaries through lifecycle hooks, writes Markdown source files, and renders a self-contained project-brain HTML page for onboarding and handoff. It also includes team/public views, Superpowers import, approved action intents, and generated project indexes.",
     "developerName": "Chronicle contributors",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],

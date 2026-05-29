@@ -5,6 +5,7 @@ Chronicle treats public publishing as allowlist-only.
 The current build can draft and ship a public build log, but publishing is approval-gated:
 
 - New items default to `visibility: private`.
+- Durable source files live under `chronicle/`; `data/chronicle.json` is a generated cache.
 - Secret-looking values in `raw_summary` force the item to stay private.
 - Secret-looking values, local paths, internal URLs, and env var names in `title`, `summary`, or `public_summary` make a public item invalid.
 - The validator rejects hand-edited public items that contain unsafe publishable text.
@@ -47,7 +48,7 @@ The static project-brain HTML page has no direct filesystem or agent power. When
 The next coding-agent session applies that file with:
 
 ```bash
-node ./bin/chronicle.js actions apply --actions chronicle-actions.json --render
+node ./bin/chronicle.js actions apply --approve --actions chronicle-actions.json --render
 ```
 
-Chronicle only accepts known low-risk status changes. Unknown actions, unknown targets, and unsupported statuses are skipped.
+Chronicle only accepts known low-risk status changes. Unknown actions, unknown targets, and unsupported statuses are skipped. The CLI refuses to apply the file unless `--approve` is present, so a human has to review the downloaded JSON first.

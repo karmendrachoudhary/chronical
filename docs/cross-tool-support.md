@@ -2,13 +2,15 @@
 
 Last checked: 2026-05-29.
 
+Chronicle v1 treats Claude Code and Codex as release-supported. Gemini CLI support is present but experimental because its reliable hook point is turn-level, not true session-end.
+
 Chronicle uses the same CLI command everywhere:
 
 ```bash
 node "$(git rev-parse --show-toplevel)/bin/chronicle.js" capture --hook-input - --source-tool <tool> --render --hook-mode
 ```
 
-Plain English: each coding tool sends JSON to Chronicle. Chronicle reads that JSON, optionally reads the transcript path from it, appends one private item to `data/chronicle.json`, and refreshes the local HTML/index outputs.
+Plain English: each coding tool sends JSON to Chronicle. Chronicle reads that JSON, optionally reads the transcript path from it, writes one private Markdown source item under `chronicle/`, syncs the generated JSON cache, and refreshes the local HTML/index outputs.
 
 ## Current Support Matrix
 
@@ -16,7 +18,7 @@ Plain English: each coding tool sends JSON to Chronicle. Chronicle reads that JS
 | --- | --- | --- | --- | --- |
 | Claude Code | Supported | `Stop` | `.claude/settings.json` | Good fit for end-of-turn capture. Claude also documents `SessionStart`, `PostToolUse`, and `PreCompact`, which Chronicle can use later for richer capture. |
 | Codex | Supported | `Stop` | `.codex/hooks.json` or plugin `hooks/hooks.json` | Codex `Stop` is turn-scoped, not whole-session scoped. Codex also supports plugin-bundled hooks, which Chronicle uses. |
-| Gemini CLI | Supported with turn-level capture | `AfterAgent` | `.gemini/settings.json` | Gemini's `SessionEnd` is best-effort and does not wait for completion, so Chronicle uses `AfterAgent` for reliable writes. |
+| Gemini CLI | Experimental turn-level capture | `AfterAgent` | `.gemini/settings.json` | Gemini's `SessionEnd` is best-effort and does not wait for completion, so Chronicle uses `AfterAgent` for reliable writes. |
 
 ## Hook Files in This Repo
 
@@ -29,7 +31,7 @@ For Claude Code, merge the `hooks` object into `.claude/settings.json`. For Code
 
 ## Why Gemini Uses `AfterAgent`
 
-Gemini CLI documents `SessionEnd`, but it is advisory and the CLI does not wait for it to complete. That is risky for Chronicle because writing `data/chronicle.json` needs to finish cleanly.
+Gemini CLI documents `SessionEnd`, but it is advisory and the CLI does not wait for it to complete. That is risky for Chronicle because writing Markdown source and the generated JSON cache needs to finish cleanly.
 
 So Chronicle's Gemini example uses `AfterAgent`. That means it captures after each completed agent turn instead of only when the whole CLI exits. This is less perfect semantically, but safer technically.
 

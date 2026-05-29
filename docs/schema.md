@@ -1,15 +1,49 @@
 # Chronicle Unified Item Schema
 
-Chronicle now stores one local data file at `data/chronicle.json`. The important change is that the store is no longer only a list of events. It is a unified list of `items`.
+Chronicle's durable source of truth is Markdown under `chronicle/`. The generated cache is `data/chronicle.json`. The cache is still documented here because every renderer reads the same normalized `items` shape from it.
 
-Plain English: Chronicle captures work once, then renders many views from the same item list. A timeline entry, feature, file note, decision, roadmap task, release, or future action intent all use the same basic shape.
+Plain English: agents and humans can read or edit small Markdown files; Chronicle syncs them into one item list; every HTML view renders from that same list. A timeline entry, feature, file note, decision, roadmap task, release, or future action intent all use the same basic shape.
+
+## Source Files
+
+Chronicle writes source Markdown files like:
+
+```text
+chronicle/sessions/2026-05-29/evt_1234abcd.md
+chronicle/imports/superpowers/feat_1234abcd.md
+chronicle/actions/feat_1234abcd.md
+chronicle/releases/rel_1234abcd.md
+```
+
+Each file contains a `---chronicle-json` metadata block plus editable narrative sections:
+
+```md
+---chronicle-json
+{ "id": "evt_1234abcd", "kind": "event" }
+---
+# Added passwordless login
+
+## Summary
+
+Private project-brain summary.
+
+## Raw Notes
+
+Detailed private notes.
+
+## Public Summary
+
+Safe one-line public summary.
+```
+
+Run `chronicle source sync` to rebuild the generated JSON cache from Markdown.
 
 The top-level shape is:
 
 ```json
 {
   "schema_version": 2,
-  "generated_by": "chronicle-devlog@0.6.0",
+  "generated_by": "chronicle-devlog@1.0.0",
   "items": []
 }
 ```
@@ -131,7 +165,7 @@ Shape:
 Supported actions are `set_feature_status` and `set_roadmap_status`. The CLI applies them with:
 
 ```bash
-node ./bin/chronicle.js actions apply --actions chronicle-actions.json --render
+node ./bin/chronicle.js actions apply --approve --actions chronicle-actions.json --render
 ```
 
 Use this command after hand-editing the store:

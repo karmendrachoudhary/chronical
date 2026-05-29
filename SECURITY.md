@@ -15,9 +15,10 @@ Please open a GitHub issue if you find a way for Chronicle to:
 ## Current Safety Model
 
 - Captured items default to `visibility: private`.
+- Markdown source files under `chronicle/` are private project memory. Do not publish them automatically.
 - The public page is allowlist-only and only reads `public_summary` from `visibility: public` items.
 - Public shipping requires `--approve`.
-- The project-brain page queues action intents but does not edit files directly.
+- The project-brain page queues action intents but does not edit files directly. The CLI also requires `--approve` before applying them.
 - Generated `_INDEX.md` cleanup only removes files that start with Chronicle's generated marker.
 
 See `docs/safety.md` for the detailed rules.
