@@ -1,6 +1,6 @@
 {
   "name": "chronicle-devlog",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Generate a private project brain for onboarding and handoff from Claude Code and Codex sessions.",
   "type": "module",
   "author": "Chronicle contributors",
@@ -25,6 +25,8 @@
     "docs/",
     "assets/",
     ".codex-plugin/",
+    ".claude-plugin/",
+    ".agents/",
     "chronicle.config.json",
     "README.md",
     "CHANGELOG.md",
@@ -44,6 +46,7 @@
     "import:superpowers": "node ./bin/chronicle.js import superpowers --store data/chronicle.json --render",
     "actions:apply": "node ./bin/chronicle.js actions apply --approve --actions chronicle-actions.json --store data/chronicle.json --render",
     "smoke:v1": "node ./scripts/v1-smoke.js",
+    "smoke:v2": "node ./scripts/v1-smoke.js",
     "validate": "node ./bin/chronicle.js validate --store data/chronicle.json",
     "test": "node --test"
   },

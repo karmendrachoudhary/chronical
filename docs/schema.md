@@ -43,7 +43,7 @@ The top-level shape is:
 ```json
 {
   "schema_version": 2,
-  "generated_by": "chronicle-devlog@1.0.0",
+  "generated_by": "chronicle-devlog@2.0.0",
   "items": []
 }
 ```

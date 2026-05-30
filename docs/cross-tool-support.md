@@ -1,8 +1,8 @@
 # Cross-Tool Support
 
-Last checked: 2026-05-29.
+Last checked: 2026-05-30.
 
-Chronicle v1 treats Claude Code and Codex as release-supported. Gemini CLI support is present but experimental because its reliable hook point is turn-level, not true session-end.
+Chronicle v2 treats Claude Code and Codex as plugin-supported. Gemini CLI support is present but experimental because its reliable hook point is turn-level, not true session-end.
 
 Chronicle uses the same CLI command everywhere:
 
@@ -14,20 +14,28 @@ Plain English: each coding tool sends JSON to Chronicle. Chronicle reads that JS
 
 ## Current Support Matrix
 
-| Tool | Capture status | Recommended hook | Config file | Notes |
+| Tool | Capture status | Recommended hook | Config/plugin files | Notes |
 | --- | --- | --- | --- | --- |
-| Claude Code | Supported | `Stop` | `.claude/settings.json` | Good fit for end-of-turn capture. Claude also documents `SessionStart`, `PostToolUse`, and `PreCompact`, which Chronicle can use later for richer capture. |
-| Codex | Supported | `Stop` | `.codex/hooks.json` or plugin `hooks/hooks.json` | Codex `Stop` is turn-scoped, not whole-session scoped. Codex also supports plugin-bundled hooks, which Chronicle uses. |
+| Claude Code | Supported plugin | `Stop` | `.claude-plugin/plugin.json`, `hooks/claude-plugin/hooks.json`, `skills/**` | Provides `/chronicle:*` slash commands plus bundled capture hook. Manual fallback: `.claude/settings.json`. |
+| Codex | Supported plugin | `Stop` | `.codex-plugin/plugin.json`, `hooks/hooks.json`, `skills/**`, `.agents/plugins/marketplace.json` | Codex `Stop` is turn-scoped. Codex uses `/plugins`, `/skills`, and `/hooks` rather than plugin-defined custom slash commands. Manual fallback: `.codex/hooks.json`. |
 | Gemini CLI | Experimental turn-level capture | `AfterAgent` | `.gemini/settings.json` | Gemini's `SessionEnd` is best-effort and does not wait for completion, so Chronicle uses `AfterAgent` for reliable writes. |
+| OpenCode / Plod / Hermes hosts | Planned | Unknown | Not implemented | Add thin adapters after their plugin specs are confirmed. They should call the same `chronicle` CLI. |
 
 ## Hook Files in This Repo
 
-- Claude Code example: `hooks/claude/hooks.json`
-- Codex example: `hooks/codex/hooks.json`
+- Claude Code plugin hook: `hooks/claude-plugin/hooks.json`
+- Claude Code manual hook example: `hooks/claude/hooks.json`
 - Codex plugin-bundled hook: `hooks/hooks.json`
+- Codex manual hook example: `hooks/codex/hooks.json`
 - Gemini CLI example: `hooks/gemini/settings.json`
 
-For Claude Code, merge the `hooks` object into `.claude/settings.json`. For Codex, copy the file to `.codex/hooks.json` or install the plugin. For Gemini CLI, merge the `hooks` object into `.gemini/settings.json`.
+For Claude Code, install the plugin when possible; otherwise merge `hooks/claude/hooks.json` into `.claude/settings.json`. For Codex, install the plugin when possible; otherwise copy `hooks/codex/hooks.json` to `.codex/hooks.json`. For Gemini CLI, merge the `hooks` object into `.gemini/settings.json`.
+
+Plugin-specific install notes live in:
+
+- `docs/claude-code-plugin.md`
+- `docs/codex-plugin.md`
+- `docs/plugin-adapters.md`
 
 ## Why Gemini Uses `AfterAgent`
 

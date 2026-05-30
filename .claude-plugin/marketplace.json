@@ -1,0 +1,26 @@
+{
+  "name": "chronicle-local",
+  "owner": {
+    "name": "Chronicle contributors"
+  },
+  "description": "Local marketplace for the Chronicle Claude Code plugin.",
+  "version": "2.0.0",
+  "plugins": [
+    {
+      "name": "chronicle",
+      "displayName": "Chronicle",
+      "source": "./",
+      "description": "Generate a private project brain for onboarding and handoff.",
+      "version": "2.0.0",
+      "author": {
+        "name": "Chronicle contributors"
+      },
+      "homepage": "https://github.com/karmendrachoudhary/chronical#readme",
+      "repository": "https://github.com/karmendrachoudhary/chronical",
+      "license": "MIT",
+      "keywords": ["ai-coding", "devlog", "project-brain", "claude-code", "codex"],
+      "category": "Productivity",
+      "tags": ["handoff", "project-brain", "devlog"]
+    }
+  ]
+}

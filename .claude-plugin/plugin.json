@@ -1,0 +1,16 @@
+{
+  "name": "chronicle",
+  "displayName": "Chronicle",
+  "version": "2.0.0",
+  "description": "Generate a private project brain for onboarding and handoff from Claude Code and Codex sessions.",
+  "author": {
+    "name": "Chronicle contributors"
+  },
+  "homepage": "https://github.com/karmendrachoudhary/chronical#readme",
+  "repository": "https://github.com/karmendrachoudhary/chronical",
+  "license": "MIT",
+  "keywords": ["ai-coding", "devlog", "project-brain", "claude-code", "codex", "gemini-cli", "superpowers"],
+  "skills": "./skills/",
+  "hooks": "./hooks/claude-plugin/hooks.json",
+  "defaultEnabled": true
+}

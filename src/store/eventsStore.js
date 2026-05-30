@@ -12,7 +12,7 @@ const EMPTY_LINKS = {
   releases: [],
 };
 
-const GENERATED_BY = "chronicle-devlog@1.0.0";
+const GENERATED_BY = "chronicle-devlog@2.0.0";
 
 export async function loadEventStore(storePath) {
   return loadChronicleStore(storePath);

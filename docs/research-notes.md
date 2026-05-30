@@ -45,7 +45,7 @@ Detailed cross-tool notes live in `docs/cross-tool-support.md`.
 
 ## Current Architecture Decision
 
-Current v1 implementation consumes hook input and transcript files directly, writes durable Markdown source files under `chronicle/`, syncs a generated unified `items` cache, and renders the private project brain as the main artifact. Claude Code and Codex are the v1-supported tools. Gemini, team/public views, Superpowers import, and action intents exist, but the v1 product story stays focused on onboarding and handoff.
+Current v2 implementation consumes hook input and transcript files directly, writes durable Markdown source files under `chronicle/`, syncs a generated unified `items` cache, and renders the private project brain as the main artifact. Claude Code and Codex are plugin-supported. Gemini remains experimental. Team/public views, Superpowers import, and action intents exist, but the core product story still stays focused on onboarding and handoff.
 
 ## Source Links
 

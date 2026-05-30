@@ -1,13 +1,15 @@
-# Chronicle v1 Release Checklist
+# Chronicle v2 Release Checklist
 
-Use this before tagging v1. The release claim is: Chronicle helps someone understand a codebase, see what changed, and hand it off through one private HTML project brain. Claude Code and Codex are supported in v1.
+Use this before tagging v2. The release claim is: Chronicle helps someone understand a codebase, see what changed, and hand it off through one private HTML project brain, with native plugin packaging for Claude Code and Codex.
 
 ## Product Scope
 
-- [ ] README clearly states the v1 wedge: onboarding and handoff.
-- [ ] README clearly states v1 tool support: Claude Code and Codex.
+- [ ] README clearly states the product wedge: onboarding and handoff.
+- [ ] README clearly states v2 plugin support: Claude Code and Codex.
+- [ ] Claude Code install flow documents `/chronicle:*` slash commands.
+- [ ] Codex install flow documents `/plugins`, `/skills`, and `/hooks`.
 - [ ] Gemini is labeled experimental unless it has a reliable session-end path.
-- [ ] Team/public/Superpowers/action-intent features are documented as available but not the core v1 promise.
+- [ ] Team/public/Superpowers/action-intent features are documented as available but not the core promise.
 
 ## Safety
 
@@ -32,7 +34,7 @@ Run these locally before tagging:
 node --check $(find src tests -name '*.js' -print)
 npm test
 npm run validate
-npm run smoke:v1
+npm run smoke:v2
 npm run render:brain
 npm run render:indexes
 npm pack --dry-run
@@ -44,12 +46,18 @@ Also run plugin validation when available:
 python /Users/karmendrachoudhary/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py .
 ```
 
-## Real Repo Gate
-
-Before calling v1 complete, test Chronicle on three representative repositories. The automated smoke test covers this with throwaway git repos:
+Also validate Claude Code plugin metadata when Claude Code is available:
 
 ```bash
-npm run smoke:v1
+claude plugin validate .
+```
+
+## Real Repo Gate
+
+Before calling v2 complete, test Chronicle on three representative repositories. The automated smoke test covers this with throwaway git repos:
+
+```bash
+npm run smoke:v2
 ```
 
 For a final human release review, also test on real user-facing repositories when available:

@@ -1,6 +1,14 @@
 # Changelog
 
-## 1.0.0 - Unreleased
+## 2.0.0 - 2026-05-30
+
+- Adds Claude Code plugin packaging with `.claude-plugin/plugin.json`, a local marketplace file, and a Claude-specific bundled `Stop` hook.
+- Adds Claude Code slash skills such as `/chronicle:render-brain`, `/chronicle:team-report`, `/chronicle:public-draft`, and `/chronicle:validate`.
+- Updates Codex plugin metadata to v2 and adds a repo-local Codex marketplace at `.agents/plugins/marketplace.json`.
+- Documents native install flows for Claude Code and Codex while keeping `chronicle-devlog` as the shared CLI engine.
+- Clarifies the adapter strategy for future OpenCode, Plod, Gemini, and Hermes-style hosts.
+
+## 1.0.0 - 2026-05-29
 
 - Reframes v1 around the onboarding and handoff project-brain wedge.
 - Treats Claude Code and Codex as the v1-supported capture tools.

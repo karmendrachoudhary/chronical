@@ -18,12 +18,12 @@ Why:
 ## Trade-Offs
 
 - `CLAUDE.md` may be read automatically by Claude Code. That is useful, but Chronicle must keep it descriptive and clearly generated.
-- `AGENTS.md` is broader, but using it in v1 would risk overriding project instructions in more tools.
+- `AGENTS.md` is broader, but using it in v2 would risk overriding project instructions in more tools.
 - `README.md` is familiar, but projects already use it for human-facing documentation. Rewriting it automatically would be risky.
 
 ## Current Scope
 
-Current v1 behavior writes:
+Current v2 behavior writes:
 
 - one root `_INDEX.md`, always;
 - per-folder `_INDEX.md` files only when the folder has enough tracked files or related Chronicle items to be useful;

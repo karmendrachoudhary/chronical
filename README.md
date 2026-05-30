@@ -4,11 +4,13 @@ Chronicle turns AI coding sessions into a private project brain for onboarding a
 
 Plain English: point Chronicle at a codebase and it keeps small Markdown notes about what changed. From those notes it generates one self-contained HTML file that helps someone understand the project, see recent work, and hand it off.
 
+Current version: **2.0.0**. This release packages Chronicle for both Claude Code and Codex while keeping the same local CLI engine.
+
 ![Chronicle project brain screenshot](assets/project-brain.png)
 
 ## What Works Now
 
-Version 1 is focused on the wedge: **understand the project, see what changed, and hand it off**. The supported coding tools for v1 are **Claude Code and Codex**.
+Version 2 is focused on the wedge: **understand the project, see what changed, and hand it off**, with native plugin packaging for **Claude Code and Codex**.
 
 - Capture from Claude Code and Codex hook JSON. Gemini support is experimental because its end-of-session hook is best-effort.
 - Parse local JSONL transcripts when a tool exposes a transcript path.
@@ -23,7 +25,7 @@ Version 1 is focused on the wedge: **understand the project, see what changed, a
 - Queue safe action intents from the project-brain page and apply them next session.
 - Generate a root `_INDEX.md` and selective folder `_INDEX.md` / `CLAUDE.md` maps for agents and humans.
 - Validate schema and public-safety rules.
-- Ship as an MIT-licensed open-source Codex plugin/package structure.
+- Ship as an MIT-licensed open-source Claude Code plugin, Codex plugin, and Node CLI package structure.
 
 ## Install Locally
 
@@ -42,6 +44,65 @@ If you do not want to use `npm link`, run commands with:
 ```bash
 node ./bin/chronicle.js --help
 ```
+
+## Install As A Claude Code Plugin
+
+Chronicle v2 includes `.claude-plugin/plugin.json`, Claude Code skills, and a Claude Code `Stop` hook.
+
+For local development, run Claude Code with this repo as a plugin directory:
+
+```bash
+claude --plugin-dir /Users/karmendrachoudhary/Desktop/SideProjects/Chronical
+```
+
+Inside Claude Code, you can then use namespaced slash commands:
+
+```text
+/chronicle:render-brain
+/chronicle:team-report
+/chronicle:public-draft v0.1.0
+/chronicle:validate
+```
+
+To install through the local marketplace instead:
+
+```text
+/plugin marketplace add /Users/karmendrachoudhary/Desktop/SideProjects/Chronical
+/plugin install chronicle@chronicle-local
+/reload-plugins
+```
+
+Details: `docs/claude-code-plugin.md`.
+
+## Install As A Codex Plugin
+
+Chronicle v2 includes `.codex-plugin/plugin.json`, Codex skills, a Codex plugin hook, and a repo-local marketplace at `.agents/plugins/marketplace.json`.
+
+Inside Codex, use the built-in slash commands:
+
+```text
+/plugins
+/skills
+/hooks
+```
+
+Install or enable `chronicle` from `Chronicle Local`, then review and trust the Chronicle `Stop` hook in `/hooks`.
+
+If Codex does not discover the repo marketplace automatically, add it from a terminal and restart Codex:
+
+```bash
+codex plugin marketplace add /Users/karmendrachoudhary/Desktop/SideProjects/Chronical
+```
+
+Codex plugins do not currently expose custom `/chronicle:*` commands the same way Claude Code does. Use `/skills` or natural language prompts instead:
+
+```text
+Use Chronicle to render my project brain.
+Use Chronicle to draft the public build log for v0.1.0, but do not ship it.
+Use Chronicle to validate the data store and public-safety rules.
+```
+
+Details: `docs/codex-plugin.md`.
 
 ## Try the Demo
 
@@ -87,11 +148,15 @@ Command meanings:
 
 ## Hook Setup
 
-Chronicle includes example hook configs in `hooks/`. For v1 release quality, use Claude Code and Codex first.
+Chronicle includes plugin hooks and manual hook configs in `hooks/`. Use plugin install for Claude Code and Codex when possible; use manual hooks when a project cannot install plugins yet.
 
 Plain English: hooks make Chronicle run automatically after an AI coding turn. Manual commands also work, so you can ask Claude Code or Codex to run them whenever you want to refresh the project brain.
 
 ### Claude Code
+
+Preferred v2 path: install the Claude Code plugin, then use `/chronicle:*` commands and the bundled hook.
+
+Manual fallback:
 
 Merge `hooks/claude/hooks.json` into `.claude/settings.json`.
 
@@ -105,7 +170,11 @@ After this, Claude Code can update Chronicle automatically at the end of a turn.
 
 ### Codex
 
-Copy `hooks/codex/hooks.json` to `.codex/hooks.json`, or install Chronicle as a Codex plugin. The plugin-bundled hook lives at `hooks/hooks.json`.
+Preferred v2 path: install the Codex plugin, then use `/plugins`, `/skills`, and `/hooks`.
+
+Manual fallback:
+
+Copy `hooks/codex/hooks.json` to `.codex/hooks.json`. The Codex plugin-bundled hook lives at `hooks/hooks.json`.
 
 Codex `Stop` is turn-scoped, so Chronicle captures after completed turns rather than only at full session exit.
 
